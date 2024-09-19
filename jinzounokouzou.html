@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>個体発生、成長と老化クイズ</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f5f5f7;
+      padding: 20px;
+      margin: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1, h2 {
+      font-size: 2.5em;
+      margin-bottom: 30px;
+      text-align: center;
+      color: #1d1d1f;
+    }
+    .quiz-container, .result-card {
+      background-color: #fff;
+      border-radius: 18px;
+      padding: 30px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .question {
+      font-size: 1.3em;
+      margin-bottom: 20px;
+      color: #1d1d1f;
+    }
+    .options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+    .option {
+      background-color: #f5f5f7;
+      border: 2px solid #007aff;
+      border-radius: 12px;
+      padding: 15px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .option:hover {
+      background-color: #e8e8ed;
+    }
+    .option.selected {
+      background-color: #007aff;
+      color: #fff;
+    }
+    .option.disabled {
+      opacity: 0.5;
+      cursor: default;
+      pointer-events: none;
+    }
+    .option::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.1);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .option:active::after {
+      opacity: 1;
+    }
+    @keyframes fadeOut {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-20px); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-out {
+      animation: fadeOut 0.5s ease-out forwards;
+    }
+    .fade-in {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+    #quiz-content {
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    }
+    .explanation {
+      margin-top: 20px;
+      font-size: 1em;
+      color: #333;
+      display: none;
+      background-color: #e8f5e9;
+      border-left: 5px solid #4caf50;
+      border-radius: 0 12px 12px 0;
+      padding: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      animation: fadeIn 0.5s ease-out;
+    }
+    .explanation-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      font-weight: bold;
+      color: #4caf50;
+    }
+    .explanation-icon {
+      font-size: 1.5em;
+      margin-right: 10px;
+    }
+    .nav-button {
+      background-color: #007aff;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 20px;
+      width: 100%;
+    }
+    .nav-button:hover {
+      background-color: #0056b3;
+    }
+    .result-card {
+      margin-bottom: 20px;
+    }
+    .result-card h3 {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+    }
+    .result-status {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .correct {
+      color: #34c759;
+    }
+    .incorrect {
+      color: #ff3b30;
+    }
+    #attendance-link {
+      background-color: #34c759;
+      color: white;
+      padding: 15px;
+      border-radius: 12px;
+      margin-top: 20px;
+      text-align: center;
+      display: none;
+    }
+    #attendance-link a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    #attendance-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>個体発生、成長と老化クイズ</h1>
+    <div id="quiz-container" class="quiz-container">
+      <div id="quiz-content">
+        <div id="question" class="question"></div>
+        <div id="options" class="options"></div>
+        <div id="explanation" class="explanation"></div>
+      </div>
+      <button id="next" class="nav-button" onclick="nextQuestion()">次の問題</button>
+    </div>
+    <div id="result-container"></div>
+    <div id="attendance-link"></div>
+  </div>
+  
+  <script>
+    const quizData = [
+{
+  "question": "始原生殖細胞の由来はどこですか？",
+  "options": [
+    "胚黄嚢の後壁",
+    "精巣の上皮",
+    "子宮内膜",
+    "神経管"
+  ],
+  "answer": 0,
+  "explanation": "始原生殖細胞は胚黄嚢の後壁に由来し、胎生4週末以後に性腺原基に進入して生殖細胞に分化します。"
+},
+{
+  "question": "生殖細胞の減数分裂において、最終的にできる細胞の染色体数はどれですか？",
+  "options": [
+    "46本",
+    "23本",
+    "92本",
+    "69本"
+  ],
+  "answer": 1,
+  "explanation": "減数分裂により、染色体数が2n（46本）からn（23本）に減少します。"
+},
+{
+  "question": "精子形成において、1個の精祖細胞からできる精子細胞の数は？",
+  "options": [
+    "1個",
+    "2個",
+    "3個",
+    "4個"
+  ],
+  "answer": 3,
+  "explanation": "減数分裂によって1個の精祖細胞から4個の精子細胞が生じます。"
+},
+{
+  "question": "卵子形成において、排卵される直前の細胞はどれですか？",
+  "options": [
+    "一次卵母細胞",
+    "二次卵母細胞",
+    "卵祖細胞",
+    "精子細胞"
+  ],
+  "answer": 1,
+  "explanation": "卵子形成では、第一減数分裂後に二次卵母細胞が形成され、これが排卵されます。"
+},
+{
+  "question": "受精時に精子が卵に進入するために必要な酵素を分泌する部分はどこですか？",
+  "options": [
+    "先体",
+    "尾部",
+    "頭部",
+    "精細管"
+  ],
+  "answer": 0,
+  "explanation": "精子の先体から酵素が放出され、卵の透明帯を消化して卵内に進入します。"
+},
+{
+  "question": "受精卵が細胞分裂を繰り返して桑実胚になるのは次のどの過程ですか？",
+  "options": [
+    "胚子",
+    "卵割",
+    "栄養膜形成",
+    "羊膜腔形成"
+  ],
+  "answer": 1,
+  "explanation": "受精卵が細胞分裂を繰り返し、細胞が集塊状になる過程を卵割といい、最終的に桑実胚と呼ばれるようになります。"
+},
+{
+  "question": "着床が起こるのは排卵後何日ごろですか？",
+  "options": [
+    "1日",
+    "3日",
+    "7日",
+    "14日"
+  ],
+  "answer": 2,
+  "explanation": "着床は排卵後約1週間で起こります。"
+},
+{
+  "question": "胚子において、脊索が形成されるのは次のどの胚葉からですか？",
+  "options": [
+    "外胚葉",
+    "内胚葉",
+    "中胚葉",
+    "胚胞"
+  ],
+  "answer": 2,
+  "explanation": "脊索は中胚葉から形成され、発生の中心軸をつくります。"
+},
+{
+  "question": "胎児の血管と母体の血液が直接接触する場所はどこですか？",
+  "options": [
+    "絨毛間腔",
+    "子宮内腔",
+    "卵管膨大部",
+    "卵割腔"
+  ],
+  "answer": 0,
+  "explanation": "絨毛間腔で胎児の血管と母体の血液が接触し、酸素と栄養素の交換が行われます。"
+},
+{
+  "question": "臍帯には通常、何本の血管がありますか？",
+  "options": [
+    "1本",
+    "2本",
+    "3本",
+    "4本"
+  ],
+  "answer": 2,
+  "explanation": "臍帯には2本の臍動脈と1本の臍静脈があります。"
+},
+{
+  "question": "妊娠中の母体における生理的体重増加はどのくらいですか？",
+  "options": [
+    "3〜5kg",
+    "5〜7kg",
+    "8〜10kg",
+    "12〜15kg"
+  ],
+  "answer": 2,
+  "explanation": "妊娠中の体重増加は主に胎児の成長、子宮の増大、血液や細胞外液の増加などによって生じ、8〜10kg程度の増加が一般的です。"
+},
+{
+  "question": "妊娠末期に仰臥位をとると、失神する可能性がある原因はどれですか？",
+  "options": [
+    "子宮の収縮",
+    "下大静脈の圧迫",
+    "心拍数の低下",
+    "血液の濃縮"
+  ],
+  "answer": 1,
+  "explanation": "妊娠末期に増大した子宮が下大静脈を圧迫し、静脈血の還流が妨げられることで心拍出量が減少し、仰臥位低血圧症候群が起こることがあります。"
+},
+{
+  "question": "妊娠中の母体の血液循環に関する変化として、正しいのはどれですか？",
+  "options": [
+    "ヘマトクリット値が増加する",
+    "循環血液量が増加する",
+    "赤血球数が増加しない",
+    "心拍出量が減少する"
+  ],
+  "answer": 1,
+  "explanation": "妊娠中、循環血液量は約50%増加します。赤血球数も増加しますが、血漿量の増加がより著しいため、ヘマトクリット値は希釈されて低下します。"
+},
+{
+  "question": "初乳と真乳の違いとして正しいのはどれですか？",
+  "options": [
+    "初乳はカゼインを含む",
+    "初乳は真乳よりも黄色みを帯びる",
+    "初乳は分娩後1か月後に分泌される",
+    "初乳はプロラクチンによって分泌される"
+  ],
+  "answer": 1,
+  "explanation": "初乳は分娩後すぐに分泌され、カゼインを含まず、一般に黄色みを帯びた色をしています。真乳は3〜4日後に分泌されます。"
+},
+{
+  "question": "分娩第2期（娩出期）に起こるのは次のどれですか？",
+  "options": [
+    "羊水が破れる",
+    "外子宮口が全開大する",
+    "胎児が産道を通過する",
+    "胎盤が排出される"
+  ],
+  "answer": 2,
+  "explanation": "分娩第2期は、外子宮口の全開大から胎児の娩出までの期間で、胎児は産道を通って母体外に排出されます。"
+},
+{
+  "question": "胎児の循環において、右心房から左心房に血液を送る迂回路はどれですか？",
+  "options": [
+    "卵円孔",
+    "動脈管",
+    "静脈管",
+    "肺動脈"
+  ],
+  "answer": 0,
+  "explanation": "胎児の血液は右心房から卵円孔を通じて左心房に流れ、肺を迂回して全身に酸素に富んだ血液を送ります。"
+},
+{
+  "question": "胎児の血液がガス交換を行う場所はどこですか？",
+  "options": [
+    "肺",
+    "胎盤",
+    "肝臓",
+    "腎臓"
+  ],
+  "answer": 1,
+  "explanation": "胎児は肺での呼吸を行わず、胎盤で母体の血液とガス交換を行います。"
+},
+{
+  "question": "胎児の血液が動脈管（ボタロ管）を通じて肺を迂回し流れる先はどこですか？",
+  "options": [
+    "上行大動脈",
+    "下行大動脈",
+    "右心房",
+    "左心房"
+  ],
+  "answer": 1,
+  "explanation": "胎児の血液は、右心室から肺動脈幹に送り出され、動脈管を通じて下行大動脈に流れます。"
+},
+{
+  "question": "分娩に関わるホルモンとして、オキシトシンの主な作用はどれですか？",
+  "options": [
+    "子宮頸部の拡張",
+    "陣痛の促進",
+    "乳腺の発育",
+    "胎児の成長"
+  ],
+  "answer": 1,
+  "explanation": "オキシトシンは子宮筋層の収縮を促進し、陣痛を強化する役割を果たします。"
+},
+{
+  "question": "分娩後に胎盤などが排出されるのは分娩のどの時期ですか？",
+  "options": [
+    "分娩第1期",
+    "分娩第2期",
+    "分娩第3期",
+    "分娩終了後24時間以内"
+  ],
+  "answer": 2,
+  "explanation": "分娩第3期は、胎児の娩出後に胎盤などの胎児付属物が排出される期間です。"
+},
+{
+  "question": "成長と発達の違いに関する説明として正しいのはどれですか？",
+  "options": [
+    "成長は機能の向上を指し、発達は容積の増加を指す",
+    "成長は容積・重量の増加を指し、発達は機能や成熟の変化を指す",
+    "成長も発達も同じ意味である",
+    "発達は成人後の変化を指す"
+  ],
+  "answer": 1,
+  "explanation": "成長は身体の容積や重量の増加を指し、発達は機能の成熟や変化を指します。"
+},
+{
+  "question": "成長ホルモンの分泌が増加するのはいつですか？",
+  "options": [
+    "運動時",
+    "覚醒時",
+    "睡眠時",
+    "空腹時"
+  ],
+  "answer": 2,
+  "explanation": "成長ホルモンは睡眠中に分泌が増加し、成長を促進します。"
+},
+{
+  "question": "小児期の成長に大きな影響を与える内部要因として最も重要なものはどれですか？",
+  "options": [
+    "気候",
+    "栄養",
+    "ホルモン",
+    "運動"
+  ],
+  "answer": 2,
+  "explanation": "成長ホルモンや甲状腺ホルモンなど、ホルモンが成長に大きく影響します。"
+},
+{
+  "question": "思春期における男子の二次性徴に含まれないのは次のどれですか？",
+  "options": [
+    "喉頭軟骨の突出",
+    "月経の発来",
+    "陰茎の肥大",
+    "変声（声がわり）"
+  ],
+  "answer": 1,
+  "explanation": "月経の発来は女子の二次性徴の一部であり、男子には起こりません。"
+},
+{
+  "question": "女児における思春期の平均的な開始時期はどれですか？",
+  "options": [
+    "6〜8歳",
+    "9〜12歳",
+    "13〜16歳",
+    "17〜20歳"
+  ],
+  "answer": 1,
+  "explanation": "女児の思春期は9〜12歳ごろに始まり、14〜16歳ごろに終わることが多いです。"
+},
+{
+  "question": "成長に影響を与える外部要因として、次のうち誤っているのはどれですか？",
+  "options": [
+    "栄養",
+    "愛情",
+    "遺伝",
+    "気候"
+  ],
+  "answer": 2,
+  "explanation": "遺伝は内部要因であり、栄養や愛情、気候などは外部要因として成長に影響を与えます。"
+},
+{
+  "question": "加齢により、ホルモンの分泌が激減するのはどのホルモンですか？",
+  "options": [
+    "成長ホルモン",
+    "エストロゲン",
+    "インスリン",
+    "テストステロン"
+  ],
+  "answer": 1,
+  "explanation": "エストロゲンは女性の閉経後に激減し、さまざまな更年期症状を引き起こします。"
+},
+{
+  "question": "テロメアの短縮が関連している老化に関する説は次のうちどれですか？",
+  "options": [
+    "生物時計説",
+    "エラー破綻説",
+    "プログラム説",
+    "フリーラジカル説"
+  ],
+  "answer": 2,
+  "explanation": "プログラム説では、テロメアの短縮が細胞の寿命を制限する役割を果たしているとされています。"
+},
+{
+  "question": "加齢による循環器系の変化として正しいのはどれですか？",
+  "options": [
+    "心拍数が増加する",
+    "心拍出量は安静時に減少する",
+    "動脈壁が厚くなり、伸展性が低下する",
+    "血圧が低下する"
+  ],
+  "answer": 2,
+  "explanation": "加齢に伴い、動脈壁が厚くなり、伸展性が低下するため血圧が上昇しやすくなります。"
+},
+{
+  "question": "老化に伴う骨の変化として最も正しいのはどれですか？",
+  "options": [
+    "骨量が増加する",
+    "骨吸収が促進され、骨粗鬆症になりやすい",
+    "骨のカルシウム濃度が増加する",
+    "骨の成長が止まる"
+  ],
+  "answer": 1,
+  "explanation": "加齢によりカルシウムの吸収能力が低下し、骨吸収が促進されるため、骨粗鬆症のリスクが高まります。"
+}
+];
+
+    let currentQuestion = 0;
+    let score = 0;
+    let userAnswers = [];
+    let shuffledOptions = [];
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function loadQuestion() {
+      const quizContent = document.getElementById('quiz-content');
+      quizContent.classList.add('fade-out');
+
+      setTimeout(() => {
+        const question = quizData[currentQuestion];
+        document.getElementById('question').textContent = question.question;
+
+        shuffledOptions = shuffleArray([...question.options]);
+        const optionsHtml = shuffledOptions.map((option, index) => `
+          <div class="option" onclick="selectOption(${index})">${option}</div>
+        `).join('');
+
+        document.getElementById('options').innerHTML = optionsHtml;
+        document.getElementById('explanation').style.display = 'none';
+
+        quizContent.classList.remove('fade-out');
+        quizContent.classList.add('fade-in');
+
+        setTimeout(() => {
+          quizContent.classList.remove('fade-in');
+        }, 500);
+      }, 500);
+    }
+
+    function selectOption(index) {
+      const options = document.querySelectorAll('.option');
+      if (options[index].classList.contains('disabled')) {
+        return;
+      }
+
+      options.forEach(option => {
+        option.classList.add('disabled');
+      });
+
+      options[index].classList.add('selected');
+
+      const question = quizData[currentQuestion];
+      const selectedAnswerIndex = question.options.indexOf(shuffledOptions[index]);
+      userAnswers[currentQuestion] = selectedAnswerIndex;
+
+      const explanationEl = document.getElementById('explanation');
+      explanationEl.innerHTML = `
+        <div class="explanation-header">
+          <span class="explanation-icon">💡</span>
+          解説
+        </div>
+        ${question.explanation}
+      `;
+      explanationEl.style.display = 'block';
+
+      if (selectedAnswerIndex === question.answer) {
+        explanationEl.style.backgroundColor = '#e8f5e9';
+        explanationEl.style.borderLeftColor = '#4caf50';
+        options[index].classList.add('correct'); 
+      } else {
+        explanationEl.style.backgroundColor = '#ffebee';
+        explanationEl.style.borderLeftColor = '#f44336';
+      }
+    }
+
+    function nextQuestion() {
+      const selectedOption = document.querySelector('.option.selected');
+      if (selectedOption === null) {
+        alert('選択肢を選んでください');
+        return; 
+      }
+
+      if (currentQuestion < quizData.length - 1) {
+        currentQuestion++;
+        loadQuestion();
+      } else {
+        showResult();
+      }
+    }
+
+    function showResult() {
+      score = userAnswers.reduce((total, answer, index) => 
+        total + (answer === quizData[index].answer ? 1 : 0), 0);
+
+      const resultContainer = document.getElementById('result-container');
+      const quizContainer = document.getElementById('quiz-container');
+      quizContainer.style.display = 'none';
+
+      const percentage = (score / quizData.length) * 100;
+      let resultHtml = `
+        <h2>クイズ結果</h2>
+        <p>正解数: ${score} / ${quizData.length}</p>
+        <p>正答率: ${percentage.toFixed(2)}%</p>
+      `;
+
+      quizData.forEach((question, index) => {
+        const isCorrect = userAnswers[index] === question.answer;
+        resultHtml += `
+          <div class="result-card">
+            <h3>問題 ${index + 1}</h3>
+            <p class="result-status ${isCorrect ? 'correct' : 'incorrect'}">
+              ${isCorrect ? '正解' : '不正解'}
+            </p>
+            <p><strong>質問:</strong> ${question.question}</p>
+            <p><strong>あなたの回答:</strong> ${question.options[userAnswers[index]] || '未回答'}</p>
+            <p><strong>正解:</strong> ${question.options[question.answer]}</p>
+            <p><strong>説明:</strong> ${question.explanation}</p>
+          </div>
+        `;
+      });
+
+      resultHtml += `<button class="nav-button" onclick="restartQuiz()">もう一度挑戦する</button>`;
+      resultContainer.innerHTML = resultHtml;
+
+      if (percentage >= 80) {
+        const attendanceLink = document.getElementById('attendance-link');
+        attendanceLink.style.display = 'block';
+        attendanceLink.innerHTML = `
+          <p>おめでとうございます！80%以上の正答率です。</p>
+          <a href="https://forms.gle/YktXvPmRWcNLn7vj8" target="_blank">出席確認フォームに回答する</a>
+        `;
+      }
+    }
+
+    function restartQuiz() {
+      currentQuestion = 0;
+      score = 0;
+      userAnswers = [];
+      shuffledOptions = [];
+      document.getElementById('quiz-container').style.display = 'block';
+      document.getElementById('result-container').innerHTML = '';
+      document.getElementById('attendance-link').style.display = 'none';
+      loadQuestion();
+    }
+
+    loadQuestion();
+  </script>
+</body>
+</html>
