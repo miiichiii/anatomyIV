@@ -1,1 +1,558 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>個体発生、成長と老化クイズ</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f5f5f7;
+      padding: 20px;
+      margin: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1, h2 {
+      font-size: 2.5em;
+      margin-bottom: 30px;
+      text-align: center;
+      color: #1d1d1f;
+    }
+    .quiz-container, .result-card {
+      background-color: #fff;
+      border-radius: 18px;
+      padding: 30px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .question {
+      font-size: 1.3em;
+      margin-bottom: 20px;
+      color: #1d1d1f;
+    }
+    .options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+    .option {
+      background-color: #f5f5f7;
+      border: 2px solid #007aff;
+      border-radius: 12px;
+      padding: 15px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .option:hover {
+      background-color: #e8e8ed;
+    }
+    .option.selected {
+      background-color: #007aff;
+      color: #fff;
+    }
+    .option.disabled {
+      opacity: 0.5;
+      cursor: default;
+      pointer-events: none;
+    }
+    .option::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.1);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .option:active::after {
+      opacity: 1;
+    }
+    @keyframes fadeOut {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-20px); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-out {
+      animation: fadeOut 0.5s ease-out forwards;
+    }
+    .fade-in {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+    #quiz-content {
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    }
+    .explanation {
+      margin-top: 20px;
+      font-size: 1em;
+      color: #333;
+      display: none;
+      background-color: #e8f5e9;
+      border-left: 5px solid #4caf50;
+      border-radius: 0 12px 12px 0;
+      padding: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      animation: fadeIn 0.5s ease-out;
+    }
+    .explanation-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      font-weight: bold;
+      color: #4caf50;
+    }
+    .explanation-icon {
+      font-size: 1.5em;
+      margin-right: 10px;
+    }
+    .nav-button {
+      background-color: #007aff;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 20px;
+      width: 100%;
+    }
+    .nav-button:hover {
+      background-color: #0056b3;
+    }
+    .result-card {
+      margin-bottom: 20px;
+    }
+    .result-card h3 {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+    }
+    .result-status {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .correct {
+      color: #34c759;
+    }
+    .incorrect {
+      color: #ff3b30;
+    }
+    #attendance-link {
+      background-color: #34c759;
+      color: white;
+      padding: 15px;
+      border-radius: 12px;
+      margin-top: 20px;
+      text-align: center;
+      display: none;
+    }
+    #attendance-link a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    #attendance-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>個体発生、成長と老化クイズ</h1>
+    <div id="quiz-container" class="quiz-container">
+      <div id="quiz-content">
+        <div id="question" class="question"></div>
+        <div id="options" class="options"></div>
+        <div id="explanation" class="explanation"></div>
+      </div>
+      <button id="next" class="nav-button" onclick="nextQuestion()">次の問題</button>
+    </div>
+    <div id="result-container"></div>
+    <div id="attendance-link"></div>
+  </div>
+  
+  <script>
+    const quizData = [
+{
+  "question": "男性の性腺にあたる器官はどれか。",
+  "options": [
+    "前立腺",
+    "精巣",
+    "尿道球腺",
+    "精嚢"
+  ],
+  "answer": 1,
+  "explanation": "男性の性腺は精巣であり、精子と男性ホルモンを産生する。"
+},
+{
+  "question": "精子を産生する場所はどこか。",
+  "options": [
+    "精巣上体",
+    "精巣",
+    "精管",
+    "前立腺"
+  ],
+  "answer": 1,
+  "explanation": "精子は精巣の中の精細管で産生される。"
+},
+{
+  "question": "精巣の中で精子を支持し栄養を与える細胞はどれか。",
+  "options": [
+    "ライディッヒ細胞",
+    "セルトリ細胞",
+    "精祖細胞",
+    "精母細胞"
+  ],
+  "answer": 1,
+  "explanation": "セルトリ細胞は精巣の精細管に存在し、精細胞に栄養を与え、支持する役割を持つ。"
+},
+{
+  "question": "男性ホルモンであるテストステロンを分泌する細胞はどれか。",
+  "options": [
+    "セルトリ細胞",
+    "ライディッヒ細胞",
+    "精祖細胞",
+    "精母細胞"
+  ],
+  "answer": 1,
+  "explanation": "ライディッヒ細胞は精巣の間質に存在し、テストステロンを分泌する。"
+},
+{
+  "question": "精巣上体の主な役割はどれか。",
+  "options": [
+    "精子の産生",
+    "精子の成熟と貯蔵",
+    "精液の産生",
+    "尿の排泄"
+  ],
+  "answer": 1,
+  "explanation": "精巣上体は精巣から送り出された精子を成熟させ、貯蔵する役割を持つ。"
+},
+{
+  "question": "精管の長さはおよそどれくらいか。",
+  "options": [
+    "4～5cm",
+    "10～15cm",
+    "20～30cm",
+    "40～50cm"
+  ],
+  "answer": 3,
+  "explanation": "精管は精巣上体から膀胱まで続く、全長40～50cmほどの管である。"
+},
+{
+  "question": "精管が通る経路で正しいのはどれか。",
+  "options": [
+    "腎臓→膀胱→尿道",
+    "精巣→精巣上体→精管→射精管→尿道",
+    "膀胱→尿管→尿道",
+    "前立腺→尿道→外尿道口"
+  ],
+  "answer": 1,
+  "explanation": "精管は精巣上体から始まり、精索の一部として鼠径管を通り、骨盤腔に入り、膀胱の後面を下行し、精嚢の導管と合流して射精管となる。射精管は前立腺を貫いて尿道に開口する。"
+},
+{
+  "question": "精液のアルカリ性成分を分泌し、精子の運動を助けるのはどれか。",
+  "options": [
+    "前立腺",
+    "精嚢",
+    "尿道球腺",
+    "精巣"
+  ],
+  "answer": 1,
+  "explanation": "精嚢は精液のアルカリ性成分を分泌し、精子の運動を助ける。"
+},
+{
+  "question": "尿道前立腺部を取り囲み、精液の約20%を分泌する器官はどれか。",
+  "options": [
+    "前立腺",
+    "精嚢",
+    "尿道球腺",
+    "精巣"
+  ],
+  "answer": 0,
+  "explanation": "前立腺は尿道前立腺部を取り囲み、精液の約20%を分泌する。"
+},
+{
+  "question": "女性の大前庭腺に相当する器官はどれか。",
+  "options": [
+    "前立腺",
+    "精嚢",
+    "尿道球腺",
+    "精巣"
+  ],
+  "answer": 2,
+  "explanation": "尿道球腺は女性の大前庭腺に相当する。"
+},
+{
+  "question": "陰茎の勃起に関与する組織はどれか。",
+  "options": [
+    "海綿体",
+    "精巣",
+    "精巣上体",
+    "前立腺"
+  ],
+  "answer": 0,
+  "explanation": "陰茎の勃起は、海綿体に血液が充満することで起こる。"
+},
+{
+  "question": "陰茎の勃起はどのような神経の作用によって起こるか。",
+  "options": [
+    "副交感神経",
+    "交感神経",
+    "運動神経",
+    "知覚神経"
+  ],
+  "answer": 0,
+  "explanation": "陰茎の勃起は、副交感神経の作用によって起こる。"
+},
+{
+  "question": "陰茎の亀頭を覆う皮膚のヒダを何というか。",
+  "options": [
+    "陰嚢",
+    "包皮",
+    "白膜",
+    "陰茎海綿体"
+  ],
+  "answer": 1,
+  "explanation": "陰茎の亀頭を覆う皮膚のヒダは包皮と呼ばれる。"
+},
+{
+  "question": "精巣と精巣上体が入っている袋状の器官はどれか。",
+  "options": [
+    "陰茎",
+    "陰嚢",
+    "包皮",
+    "前立腺"
+  ],
+  "answer": 1,
+  "explanation": "精巣と精巣上体は陰嚢の中に入っている。"
+},
+{
+  "question": "精子の形成が始まるのはいつか。",
+  "options": [
+    "出生時",
+    "幼児期",
+    "思春期",
+    "老年期"
+  ],
+  "answer": 2,
+  "explanation": "精子の形成は思春期に始まる。"
+},
+{
+  "question": "1回の射精で放出される精子数はおよそどれくらいか。",
+  "options": [
+    "100万～200万個",
+    "1000万～2000万個",
+    "1億～4億個",
+    "10億～20億個"
+  ],
+  "answer": 2,
+  "explanation": "1回の射精で放出される精子数は1億～4億個ほどである。"
+},
+{
+  "question": "精子が体外で生存できる時間はおよそどれくらいか。",
+  "options": [
+    "1～2時間",
+    "24～48時間",
+    "1～2週間",
+    "1ヶ月以上"
+  ],
+  "answer": 1,
+  "explanation": "精子は体外では、体温環境下で24～48時間ほど生存できる。"
+},
+{
+  "question": "精液の大部分を占めるのはどれか。",
+  "options": [
+    "精子",
+    "精巣からの分泌物",
+    "精嚢・前立腺・尿道球腺からの分泌物",
+    "尿"
+  ],
+  "answer": 2,
+  "explanation": "精液の大部分は精嚢・前立腺・尿道球腺からの分泌物である。"
+},
+{
+  "question": "射精はどのような神経の作用によって起こるか。",
+  "options": [
+    "副交感神経",
+    "交感神経",
+    "運動神経",
+    "知覚神経"
+  ],
+  "answer": 1,
+  "explanation": "射精は交感神経の作用によって起こる。"
+},
+{
+  "question": "精子の運動能力が低い場合、どうなるか。",
+  "options": [
+    "勃起しにくくなる",
+    "射精しにくくなる",
+    "受精しにくくなる",
+    "尿が出にくくなる"
+  ],
+  "answer": 2,
+  "explanation": "精子の運動能力が低いと、卵子にたどり着くことができず、受精しにくくなる。"
+}
+];
 
+    let currentQuestion = 0;
+    let score = 0;
+    let userAnswers = [];
+    let shuffledOptions = [];
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function loadQuestion() {
+      const quizContent = document.getElementById('quiz-content');
+      quizContent.classList.add('fade-out');
+
+      setTimeout(() => {
+        const question = quizData[currentQuestion];
+        document.getElementById('question').textContent = question.question;
+
+        shuffledOptions = shuffleArray([...question.options]);
+        const optionsHtml = shuffledOptions.map((option, index) => `
+          <div class="option" onclick="selectOption(${index})">${option}</div>
+        `).join('');
+
+        document.getElementById('options').innerHTML = optionsHtml;
+        document.getElementById('explanation').style.display = 'none';
+
+        quizContent.classList.remove('fade-out');
+        quizContent.classList.add('fade-in');
+
+        setTimeout(() => {
+          quizContent.classList.remove('fade-in');
+        }, 500);
+      }, 500);
+    }
+
+    function selectOption(index) {
+      const options = document.querySelectorAll('.option');
+      if (options[index].classList.contains('disabled')) {
+        return;
+      }
+
+      options.forEach(option => {
+        option.classList.add('disabled');
+      });
+
+      options[index].classList.add('selected');
+
+      const question = quizData[currentQuestion];
+      const selectedAnswerIndex = question.options.indexOf(shuffledOptions[index]);
+      userAnswers[currentQuestion] = selectedAnswerIndex;
+
+      const explanationEl = document.getElementById('explanation');
+      explanationEl.innerHTML = `
+        <div class="explanation-header">
+          <span class="explanation-icon">💡</span>
+          解説
+        </div>
+        ${question.explanation}
+      `;
+      explanationEl.style.display = 'block';
+
+      if (selectedAnswerIndex === question.answer) {
+        explanationEl.style.backgroundColor = '#e8f5e9';
+        explanationEl.style.borderLeftColor = '#4caf50';
+        options[index].classList.add('correct'); 
+      } else {
+        explanationEl.style.backgroundColor = '#ffebee';
+        explanationEl.style.borderLeftColor = '#f44336';
+      }
+    }
+
+    function nextQuestion() {
+      const selectedOption = document.querySelector('.option.selected');
+      if (selectedOption === null) {
+        alert('選択肢を選んでください');
+        return; 
+      }
+
+      if (currentQuestion < quizData.length - 1) {
+        currentQuestion++;
+        loadQuestion();
+      } else {
+        showResult();
+      }
+    }
+
+    function showResult() {
+      score = userAnswers.reduce((total, answer, index) => 
+        total + (answer === quizData[index].answer ? 1 : 0), 0);
+
+      const resultContainer = document.getElementById('result-container');
+      const quizContainer = document.getElementById('quiz-container');
+      quizContainer.style.display = 'none';
+
+      const percentage = (score / quizData.length) * 100;
+      let resultHtml = `
+        <h2>クイズ結果</h2>
+        <p>正解数: ${score} / ${quizData.length}</p>
+        <p>正答率: ${percentage.toFixed(2)}%</p>
+      `;
+
+      quizData.forEach((question, index) => {
+        const isCorrect = userAnswers[index] === question.answer;
+        resultHtml += `
+          <div class="result-card">
+            <h3>問題 ${index + 1}</h3>
+            <p class="result-status ${isCorrect ? 'correct' : 'incorrect'}">
+              ${isCorrect ? '正解' : '不正解'}
+            </p>
+            <p><strong>質問:</strong> ${question.question}</p>
+            <p><strong>あなたの回答:</strong> ${question.options[userAnswers[index]] || '未回答'}</p>
+            <p><strong>正解:</strong> ${question.options[question.answer]}</p>
+            <p><strong>説明:</strong> ${question.explanation}</p>
+          </div>
+        `;
+      });
+
+      resultHtml += `<button class="nav-button" onclick="restartQuiz()">もう一度挑戦する</button>`;
+      resultContainer.innerHTML = resultHtml;
+
+      if (percentage >= 80) {
+        const attendanceLink = document.getElementById('attendance-link');
+        attendanceLink.style.display = 'block';
+        attendanceLink.innerHTML = `
+          <p>おめでとうございます！80%以上の正答率です。</p>
+          <a href="https://forms.gle/GKpcTETvNnn58S3V9" target="_blank">出席確認フォームに回答する</a>
+        `;
+      }
+    }
+
+    function restartQuiz() {
+      currentQuestion = 0;
+      score = 0;
+      userAnswers = [];
+      shuffledOptions = [];
+      document.getElementById('quiz-container').style.display = 'block';
+      document.getElementById('result-container').innerHTML = '';
+      document.getElementById('attendance-link').style.display = 'none';
+      loadQuestion();
+    }
+
+    loadQuestion();
+  </script>
+</body>
+</html>
