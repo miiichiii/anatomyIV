@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>排尿路クイズ</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f5f5f7;
+      padding: 20px;
+      margin: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1, h2 {
+      font-size: 2.5em;
+      margin-bottom: 30px;
+      text-align: center;
+      color: #1d1d1f;
+    }
+    .quiz-container, .result-card {
+      background-color: #fff;
+      border-radius: 18px;
+      padding: 30px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .question {
+      font-size: 1.3em;
+      margin-bottom: 20px;
+      color: #1d1d1f;
+    }
+    .options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+    .option {
+      background-color: #f5f5f7;
+      border: 2px solid #007aff;
+      border-radius: 12px;
+      padding: 15px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .option:hover {
+      background-color: #e8e8ed;
+    }
+    .option.selected {
+      background-color: #007aff;
+      color: #fff;
+    }
+    .option.disabled {
+      opacity: 0.5;
+      cursor: default;
+      pointer-events: none;
+    }
+    .option::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.1);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .option:active::after {
+      opacity: 1;
+    }
+    @keyframes fadeOut {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-20px); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-out {
+      animation: fadeOut 0.5s ease-out forwards;
+    }
+    .fade-in {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+    #quiz-content {
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    }
+    .explanation {
+      margin-top: 20px;
+      font-size: 1em;
+      color: #333;
+      display: none;
+      background-color: #e8f5e9;
+      border-left: 5px solid #4caf50;
+      border-radius: 0 12px 12px 0;
+      padding: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      animation: fadeIn 0.5s ease-out;
+    }
+    .explanation-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      font-weight: bold;
+      color: #4caf50;
+    }
+    .explanation-icon {
+      font-size: 1.5em;
+      margin-right: 10px;
+    }
+    .nav-button {
+      background-color: #007aff;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 20px;
+      width: 100%;
+    }
+    .nav-button:hover {
+      background-color: #0056b3;
+    }
+    .result-card {
+      margin-bottom: 20px;
+    }
+    .result-card h3 {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+    }
+    .result-status {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .correct {
+      color: #34c759;
+    }
+    .incorrect {
+      color: #ff3b30;
+    }
+    #attendance-link {
+      background-color: #34c759;
+      color: white;
+      padding: 15px;
+      border-radius: 12px;
+      margin-top: 20px;
+      text-align: center;
+      display: none;
+    }
+    #attendance-link a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    #attendance-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>排尿路クイズ</h1>
+    <div id="quiz-container" class="quiz-container">
+      <div id="quiz-content">
+        <div id="question" class="question"></div>
+        <div id="options" class="options"></div>
+        <div id="explanation" class="explanation"></div>
+      </div>
+      <button id="next" class="nav-button" onclick="nextQuestion()">次の問題</button>
+    </div>
+    <div id="result-container"></div>
+    <div id="attendance-link"></div>
+  </div>
+  
+  <script>
+    const quizData = [
+{
+  "question": "尿管の長さはおおよそどれくらいか？",
+  "options": [
+    "5〜10 cm",
+    "10〜15 cm",
+    "15〜20 cm",
+    "25〜30 cm"
+  ],
+  "answer": 3,
+  "explanation": "尿管は腎臓から膀胱まで尿を運ぶ管で、その長さは左右とも25〜30 cmほどです。直径は4〜7 mmで、内腔が3か所で狭くなっています。"
+},
+{
+  "question": "尿管の蠕動運動の頻度はおよそどれくらいか？",
+  "options": [
+    "1〜2回／分",
+    "4〜5回／分",
+    "10〜12回／分",
+    "15〜20回／分"
+  ],
+  "answer": 1,
+  "explanation": "尿管は平滑筋でできており、蠕動運動によって尿を膀胱に送ります。この運動は1分間に4〜5回の頻度で行われています。"
+},
+{
+  "question": "膀胱の粘膜は何でできているか？",
+  "options": [
+    "単層扁平上皮",
+    "重層扁平上皮",
+    "円柱上皮",
+    "移行上皮"
+  ],
+  "answer": 3,
+  "explanation": "膀胱の粘膜は移行上皮で構成され、尿の貯留に伴う膀胱の伸縮に適応できるような構造を持っています。"
+},
+{
+  "question": "男性の尿道の長さはおおよそどれくらいか？",
+  "options": [
+    "3〜4 cm",
+    "6〜8 cm",
+    "10〜12 cm",
+    "16〜18 cm"
+  ],
+  "answer": 3,
+  "explanation": "男性の尿道は前立腺部・隔膜部・海綿体部に分かれており、全長は約16〜18 cmです。一方、女性の尿道は3〜4 cmと短くなっています。"
+},
+{
+  "question": "女性の尿道は男性の尿道と比べてどうであるか？",
+  "options": [
+    "同じくらい長い",
+    "男性よりも短い",
+    "男性よりも長い",
+    "同じ長さ"
+  ],
+  "answer": 1,
+  "explanation": "女性の尿道は男性よりもかなり短く、3〜4 cm程度です。これにより、男性よりも尿路感染症にかかりやすい傾向があります。"
+},
+{
+  "question": "膀胱三角とは何か？",
+  "options": [
+    "尿管の開口部と尿道の出口を結ぶ三角形の領域",
+    "膀胱の形状のこと",
+    "膀胱内の粘膜のひだが多い部分",
+    "膀胱の下部で膀胱壁が薄い部分"
+  ],
+  "answer": 0,
+  "explanation": "膀胱三角は、尿管の開口部と内尿道口を結んでできる三角形の領域で、膀胱の粘膜が滑らかで伸展しにくい部分です。"
+},
+{
+  "question": "膀胱に尿がたまってくると最初に伝えられる神経はどれか？",
+  "options": [
+    "迷走神経",
+    "骨盤内臓神経",
+    "交感神経",
+    "三叉神経"
+  ],
+  "answer": 1,
+  "explanation": "膀胱壁の伸展刺激は骨盤内臓神経を通して排尿中枢に伝えられます。"
+},
+{
+  "question": "排尿反射で最初に収縮する筋肉はどれか？",
+  "options": [
+    "膀胱平滑筋",
+    "内尿道括約筋",
+    "骨格筋",
+    "心筋"
+  ],
+  "answer": 0,
+  "explanation": "排尿反射が起こると、副交感神経によって膀胱平滑筋（排尿筋）が収縮し、尿を膀胱から排出します。"
+},
+{
+  "question": "尿の成分で95%を占めるのは何か？",
+  "options": [
+    "クレアチニン",
+    "尿素",
+    "尿酸",
+    "水"
+  ],
+  "answer": 3,
+  "explanation": "尿の主成分は水であり、95%を占めます。残りの5%は尿素、尿酸、クレアチニンなどの固形成分です。"
+},
+{
+  "question": "通常の尿のpHはどれくらいか？",
+  "options": [
+    "1.0",
+    "4.0",
+    "6.0",
+    "9.0"
+  ],
+  "answer": 2,
+  "explanation": "正常な尿は弱酸性であり、通常pHは6.0程度です。体の酸塩基バランスに応じて尿のpHは変動します。"
+},
+{
+  "question": "尿の比重が増すのはどのようなときか？",
+  "options": [
+    "水分をたくさん飲んだとき",
+    "尿が濃縮されたとき",
+    "血液のpHが上昇したとき",
+    "腸管の活動が活発なとき"
+  ],
+  "answer": 1,
+  "explanation": "尿の比重は尿の濃縮によって増加します。水分摂取が少ないと尿が濃縮されて比重が上昇します。"
+},
+{
+  "question": "膀胱にたまる尿の量が150〜300 mLを超えると何を感じるか？",
+  "options": [
+    "発汗",
+    "食欲",
+    "尿意",
+    "口渇"
+  ],
+  "answer": 2,
+  "explanation": "膀胱内の尿量が150〜300 mLに達すると尿意を感じます。さらに尿がたまると膀胱が過度に伸展されて痛みを感じることもあります。"
+},
+{
+  "question": "尿の色素となっているのは何か？",
+  "options": [
+    "尿素",
+    "尿酸",
+    "ウロクロム",
+    "クレアチニン"
+  ],
+  "answer": 2,
+  "explanation": "尿の色はウロクロムという色素によって決まり、通常は無色透明から麦わら色です。"
+},
+{
+  "question": "尿の色が赤くなるのは何が原因か？",
+  "options": [
+    "尿の濃縮",
+    "血尿",
+    "ビリルビンの増加",
+    "炭酸塩の沈殿"
+  ],
+  "answer": 1,
+  "explanation": "尿の色が赤くなるのは、尿路での出血や溶血などによる血尿が原因です。"
+},
+{
+  "question": "腎臓で尿の生成が行われているにもかかわらず、排尿できない状態を何と呼ぶか？",
+  "options": [
+    "無尿",
+    "排尿痛",
+    "尿閉",
+    "尿失禁"
+  ],
+  "answer": 2,
+  "explanation": "尿閉は、腎臓で尿は作られているものの、排尿することができない状態を指します。"
+},
+{
+  "question": "排尿困難の原因として最も多いのは何か？",
+  "options": [
+    "精神的ストレス",
+    "腎盂腎炎",
+    "前立腺肥大",
+    "感染症"
+  ],
+  "answer": 2,
+  "explanation": "中年以降の男性では、前立腺肥大が尿道を圧迫し、排尿困難の原因となることが多いです。"
+},
+{
+  "question": "頻尿の排尿回数が通常より多いのは何回以上か？",
+  "options": [
+    "2〜3回／日",
+    "4〜8回／日（昼間）",
+    "0〜1回／日（夜間）",
+    "10回以上／日"
+  ],
+  "answer": 1,
+  "explanation": "昼間の排尿回数は通常4〜8回ですが、これを超える場合は頻尿とされます。"
+},
+{
+  "question": "尿失禁で最も多いのはどのようなときにおこるか？",
+  "options": [
+    "夜間睡眠時",
+    "食事中",
+    "咳やくしゃみなど腹圧が加わったとき",
+    "運動後"
+  ],
+  "answer": 2,
+  "explanation": "腹圧性失禁は、多産や高齢の女性で多く、咳やくしゃみなど腹圧がかかるときにおこりやすいです。"
+},
+{
+  "question": "腎盂から尿管への尿の移動は何によって起こるか？",
+  "options": [
+    "神経刺激",
+    "平滑筋の蠕動運動",
+    "重力",
+    "血圧"
+  ],
+  "answer": 1,
+  "explanation": "腎盂から尿管への尿の移動は、尿管の平滑筋による蠕動運動によって行われます。"
+},
+{
+  "question": "膀胱から体外に尿を排出するための器官は何か？",
+  "options": [
+    "腎盂",
+    "腎臓",
+    "尿管",
+    "尿道"
+  ],
+  "answer": 3,
+  "explanation": "尿道は、膀胱から体外へ尿を排出するための通り道です。"
+},
+{
+  "question": "ナトリウムイオンが再吸収される主な部位はどれか。",
+  "options": [
+    "近位尿細管",
+    "Henle（ヘンレ）のループ〈係蹄〉下行脚",
+    "Henle（ヘンレ）のループ〈係蹄〉上行脚",
+    "遠位尿細管",
+    "集合管"
+  ],
+  "answer": 0,
+  "explanation": "ナトリウムイオンの大部分は近位尿細管で再吸収されます。近位尿細管は腎臓で再吸収の主な役割を果たす部位です。"
+},
+{
+  "question": "腎臓について正しいのはどれか。",
+  "options": [
+    "腹腔内にある。",
+    "左右の腎臓は同じ高さにある。",
+    "腎静脈は下大静脈に合流する。",
+    "腎動脈は腹腔動脈から分かれる。"
+  ],
+  "answer": 2,
+  "explanation": "腎静脈は腎臓からの静脈血を下大静脈に運びます。腎臓は後腹膜臓器であり、左右の腎臓は高さが異なり、腎動脈は腹部大動脈から分岐します。"
+},
+{
+  "question": "抗利尿ホルモン〈ADH〉について正しいのはどれか。",
+  "options": [
+    "尿細管における水分の再吸収を抑制する。",
+    "血漿浸透圧によって分泌が調節される。",
+    "飲酒によって分泌が増加する。",
+    "下垂体前葉から分泌される。"
+  ],
+  "answer": 1,
+  "explanation": "ADH（抗利尿ホルモン）は血漿浸透圧の上昇によって分泌が促進され、水の再吸収を促進します。分泌は下垂体後葉から行われ、飲酒によって分泌は減少します。"
+},
+{
+  "question": "抗利尿ホルモン（ADH）の分泌を抑制するのはどれか。",
+  "options": [
+    "血圧低下",
+    "循環血漿量減少",
+    "血漿浸透圧低下",
+    "血中カルシウム値低下"
+  ],
+  "answer": 2,
+  "explanation": "ADHの分泌は血漿浸透圧の上昇によって促進され、逆に低下することで抑制されます。血圧や循環血漿量の低下はADH分泌を促進する要因です。"
+},
+{
+  "question": "腎臓でナトリウムイオンの再吸収を促進するのはどれか。",
+  "options": [
+    "バソプレシン",
+    "アルドステロン",
+    "レニン",
+    "心房性ナトリウム利尿ペプチド"
+  ],
+  "answer": 1,
+  "explanation": "アルドステロンは遠位尿細管や集合管でナトリウムの再吸収を促進し、水の再吸収も同時に促します。他の選択肢は直接ナトリウムの再吸収を促進しません。"
+},
+{
+  "question": "アンジオテンシンⅡの作用はどれか。",
+  "options": [
+    "細動脈を収縮させる。",
+    "毛細血管を拡張させる。",
+    "レニン分泌を促進する。",
+    "アルドステロン分泌を抑制する。"
+  ],
+  "answer": 0,
+  "explanation": "アンジオテンシンⅡは血圧上昇作用を持ち、細動脈を収縮させて血圧を上げる他、アルドステロン分泌も促進します。"
+},
+{
+  "question": "アルドステロンで正しいのはどれか。",
+  "options": [
+    "近位尿細管に作用する。",
+    "副腎髄質から分泌される。",
+    "ナトリウムの再吸収を促進する。",
+    "アンジオテンシンⅠによって分泌が促進される。"
+  ],
+  "answer": 2,
+  "explanation": "アルドステロンは副腎皮質から分泌され、遠位尿細管や集合管に作用してナトリウムの再吸収を促進します。"
+},
+{
+  "question": "膀胱で正しいのはどれか。",
+  "options": [
+    "漿膜で覆われている。",
+    "直腸の後方に存在する。",
+    "粘膜は移行上皮である。",
+    "筋層は2層構造である。"
+  ],
+  "answer": 2,
+  "explanation": "膀胱の粘膜は伸縮性に富む移行上皮でできており、尿の貯留に対応しています。"
+},
+{
+  "question": "排尿時に収縮するのはどれか。",
+  "options": [
+    "尿　管",
+    "尿　道",
+    "膀胱平滑筋",
+    "内尿道括約筋",
+    "外尿道括約筋"
+  ],
+  "answer": 2,
+  "explanation": "排尿時には膀胱平滑筋（排尿筋）が収縮し、内尿道括約筋や外尿道括約筋は弛緩します。"
+},
+{
+  "question": "蠕動運動がみられるのはどれか。2つ選べ。",
+  "options": [
+    "腎動脈",
+    "腎　盂",
+    "尿　管",
+    "膀　胱",
+    "尿　道"
+  ],
+  "answer": [1, 2],
+  "explanation": "蠕動運動は尿の移動を助ける運動で、腎盂と尿管にみられます。腎動脈や尿道には蠕動運動はありません。"
+}
+];
+
+    let currentQuestion = 0;
+    let score = 0;
+    let userAnswers = [];
+    let shuffledOptions = [];
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function loadQuestion() {
+      const quizContent = document.getElementById('quiz-content');
+      quizContent.classList.add('fade-out');
+
+      setTimeout(() => {
+        const question = quizData[currentQuestion];
+        document.getElementById('question').textContent = question.question;
+
+        shuffledOptions = shuffleArray([...question.options]);
+        const optionsHtml = shuffledOptions.map((option, index) => `
+          <div class="option" onclick="selectOption(${index})">${option}</div>
+        `).join('');
+
+        document.getElementById('options').innerHTML = optionsHtml;
+        document.getElementById('explanation').style.display = 'none';
+
+        quizContent.classList.remove('fade-out');
+        quizContent.classList.add('fade-in');
+
+        setTimeout(() => {
+          quizContent.classList.remove('fade-in');
+        }, 500);
+      }, 500);
+    }
+
+    function selectOption(index) {
+      const options = document.querySelectorAll('.option');
+      if (options[index].classList.contains('disabled')) {
+        return;
+      }
+
+      options.forEach(option => {
+        option.classList.add('disabled');
+      });
+
+      options[index].classList.add('selected');
+
+      const question = quizData[currentQuestion];
+      const selectedAnswerIndex = question.options.indexOf(shuffledOptions[index]);
+      userAnswers[currentQuestion] = selectedAnswerIndex;
+
+      const explanationEl = document.getElementById('explanation');
+      explanationEl.innerHTML = `
+        <div class="explanation-header">
+          <span class="explanation-icon">💡</span>
+          解説
+        </div>
+        ${question.explanation}
+      `;
+      explanationEl.style.display = 'block';
+
+      if (selectedAnswerIndex === question.answer) {
+        explanationEl.style.backgroundColor = '#e8f5e9';
+        explanationEl.style.borderLeftColor = '#4caf50';
+        options[index].classList.add('correct'); 
+      } else {
+        explanationEl.style.backgroundColor = '#ffebee';
+        explanationEl.style.borderLeftColor = '#f44336';
+      }
+    }
+
+    function nextQuestion() {
+      const selectedOption = document.querySelector('.option.selected');
+      if (selectedOption === null) {
+        alert('選択肢を選んでください');
+        return; 
+      }
+
+      if (currentQuestion < quizData.length - 1) {
+        currentQuestion++;
+        loadQuestion();
+      } else {
+        showResult();
+      }
+    }
+
+    function showResult() {
+      score = userAnswers.reduce((total, answer, index) => 
+        total + (answer === quizData[index].answer ? 1 : 0), 0);
+
+      const resultContainer = document.getElementById('result-container');
+      const quizContainer = document.getElementById('quiz-container');
+      quizContainer.style.display = 'none';
+
+      const percentage = (score / quizData.length) * 100;
+      let resultHtml = `
+        <h2>クイズ結果</h2>
+        <p>正解数: ${score} / ${quizData.length}</p>
+        <p>正答率: ${percentage.toFixed(2)}%</p>
+      `;
+
+      quizData.forEach((question, index) => {
+        const isCorrect = userAnswers[index] === question.answer;
+        resultHtml += `
+          <div class="result-card">
+            <h3>問題 ${index + 1}</h3>
+            <p class="result-status ${isCorrect ? 'correct' : 'incorrect'}">
+              ${isCorrect ? '正解' : '不正解'}
+            </p>
+            <p><strong>質問:</strong> ${question.question}</p>
+            <p><strong>あなたの回答:</strong> ${question.options[userAnswers[index]] || '未回答'}</p>
+            <p><strong>正解:</strong> ${question.options[question.answer]}</p>
+            <p><strong>説明:</strong> ${question.explanation}</p>
+          </div>
+        `;
+      });
+
+      resultHtml += `<button class="nav-button" onclick="restartQuiz()">もう一度挑戦する</button>`;
+      resultContainer.innerHTML = resultHtml;
+
+      if (percentage >= 80) {
+        const attendanceLink = document.getElementById('attendance-link');
+        attendanceLink.style.display = 'block';
+        attendanceLink.innerHTML = `
+          <p>おめでとうございます！80%以上の正答率です。</p>
+          <a href="https://forms.gle/syg66FRU2DhRsWJs9" target="_blank">出席確認フォームに回答する</a>
+        `;
+      }
+    }
+
+    function restartQuiz() {
+      currentQuestion = 0;
+      score = 0;
+      userAnswers = [];
+      shuffledOptions = [];
+      document.getElementById('quiz-container').style.display = 'block';
+      document.getElementById('result-container').innerHTML = '';
+      document.getElementById('attendance-link').style.display = 'none';
+      loadQuestion();
+    }
+
+    loadQuestion();
+  </script>
+</body>
+</html>
