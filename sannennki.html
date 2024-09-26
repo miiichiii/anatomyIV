@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>酸塩基２クイズ</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f5f5f7;
+      padding: 20px;
+      margin: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1, h2 {
+      font-size: 2.5em;
+      margin-bottom: 30px;
+      text-align: center;
+      color: #1d1d1f;
+    }
+    .quiz-container, .result-card {
+      background-color: #fff;
+      border-radius: 18px;
+      padding: 30px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .question {
+      font-size: 1.3em;
+      margin-bottom: 20px;
+      color: #1d1d1f;
+    }
+    .options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+    .option {
+      background-color: #f5f5f7;
+      border: 2px solid #007aff;
+      border-radius: 12px;
+      padding: 15px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .option:hover {
+      background-color: #e8e8ed;
+    }
+    .option.selected {
+      background-color: #007aff;
+      color: #fff;
+    }
+    .option.disabled {
+      opacity: 0.5;
+      cursor: default;
+      pointer-events: none;
+    }
+    .option::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.1);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .option:active::after {
+      opacity: 1;
+    }
+    @keyframes fadeOut {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-20px); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-out {
+      animation: fadeOut 0.5s ease-out forwards;
+    }
+    .fade-in {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+    #quiz-content {
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    }
+    .explanation {
+      margin-top: 20px;
+      font-size: 1em;
+      color: #333;
+      display: none;
+      background-color: #e8f5e9;
+      border-left: 5px solid #4caf50;
+      border-radius: 0 12px 12px 0;
+      padding: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      animation: fadeIn 0.5s ease-out;
+    }
+    .explanation-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      font-weight: bold;
+      color: #4caf50;
+    }
+    .explanation-icon {
+      font-size: 1.5em;
+      margin-right: 10px;
+    }
+    .nav-button {
+      background-color: #007aff;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 20px;
+      width: 100%;
+    }
+    .nav-button:hover {
+      background-color: #0056b3;
+    }
+    .result-card {
+      margin-bottom: 20px;
+    }
+    .result-card h3 {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+    }
+    .result-status {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .correct {
+      color: #34c759;
+    }
+    .incorrect {
+      color: #ff3b30;
+    }
+    #attendance-link {
+      background-color: #34c759;
+      color: white;
+      padding: 15px;
+      border-radius: 12px;
+      margin-top: 20px;
+      text-align: center;
+      display: none;
+    }
+    #attendance-link a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    #attendance-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>酸塩基平衡クイズ</h1>
+    <div id="quiz-container" class="quiz-container">
+      <div id="quiz-content">
+        <div id="question" class="question"></div>
+        <div id="options" class="options"></div>
+        <div id="explanation" class="explanation"></div>
+      </div>
+      <button id="next" class="nav-button" onclick="nextQuestion()">次の問題</button>
+    </div>
+    <div id="result-container"></div>
+    <div id="attendance-link"></div>
+  </div>
+  
+  <script>
+    const quizData = [
+  {
+    "question": "体内の水分量を一定に保つために、1日に最も多く生成される代謝水の栄養素はどれですか？",
+    "options": [
+      "糖",
+      "タンパク質",
+      "脂肪",
+      "ビタミン"
+    ],
+    "answer": 2,
+    "explanation": "体内で代謝される栄養素によって生成される水の量は異なり、脂肪100gの酸化で109mLの水が生成され、最も多量です。"
+  },
+  {
+    "question": "1日あたりの排尿量の平均は次のうちどれですか？",
+    "options": [
+      "100 mL",
+      "300 mL",
+      "1,500 mL",
+      "5,000 mL"
+    ],
+    "answer": 2,
+    "explanation": "ふつうの生活での排尿量は1日平均1,500 mLとされています。"
+  },
+  {
+    "question": "発汗がない状態での体外に出ていく水分のうち、不感蒸散として失われる量の合計は次のうちどれですか？",
+    "options": [
+      "100 mL",
+      "300 mL",
+      "600 mL",
+      "1,500 mL"
+    ],
+    "answer": 2,
+    "explanation": "体内の水分が皮膚表面にしみ出し蒸発することで、約600 mLの水分が1日あたり失われます。これは不感蒸散と呼ばれます。"
+  },
+  {
+    "question": "混合性脱水とは次のうちどれに当てはまりますか？",
+    "options": [
+      "水のみが失われる状態",
+      "ナトリウムと水の喪失が同時に起こる状態",
+      "血中ナトリウム濃度が著しく上昇する状態",
+      "脱水症状が見られない状態"
+    ],
+    "answer": 1,
+    "explanation": "混合性脱水は塩分の喪失を伴い、ナトリウムと水が同時に失われる脱水のことです。"
+  },
+  {
+    "question": "1日あたりに排尿される量が500 mLを下回る場合、体液のホメオスタシス維持に必要な機能が影響される恐れがある理由は次のうちどれですか？",
+    "options": [
+      "尿の量が多すぎる",
+      "老廃物の排泄が不十分になる",
+      "発汗が多くなる",
+      "血液中のNa+濃度が低下する"
+    ],
+    "answer": 1,
+    "explanation": "1日あたり500 mL程度の排尿が必要で、これ以下になると老廃物の排泄や体液のホメオスタシスの維持が困難になります。"
+  },
+  {
+    "question": "成人の体重の約何％が水分であるとされていますか？",
+    "options": [
+      "40%",
+      "50%",
+      "60%",
+      "75%"
+    ],
+    "answer": 2,
+    "explanation": "成人の体重の約60%が水分であり、そのうち2/3が細胞内、1/3が細胞外に分布しています。"
+  },
+  {
+    "question": "脱水の指標として最も良いとされるのは次のうちどれですか？",
+    "options": [
+      "血糖値",
+      "血漿タンパク質",
+      "ヘマトクリット値（Ht）",
+      "尿中クレアチニン"
+    ],
+    "answer": 2,
+    "explanation": "ヘマトクリット値（Ht）は血液中の血球が占める体積の割合で、脱水により血漿成分が減少すると相対的にHt値が上昇するため、脱水の指標となります。"
+  },
+  {
+    "question": "乳児が脱水症に陥りやすい理由として正しいのは次のうちどれですか？",
+    "options": [
+      "細胞外液量が少ないから",
+      "体重の70～75％が水分であるから",
+      "尿の生成が少ないから",
+      "血液のNa+濃度が低いから"
+    ],
+    "answer": 1,
+    "explanation": "乳児では成人に比べて体内水分量が多く、容易に脱水症に陥ることがあるため注意が必要です。"
+  },
+  {
+    "question": "一次脱水の主な特徴として正しいものは次のうちどれですか？",
+    "options": [
+      "ナトリウムの不足が主",
+      "主に水の喪失が原因",
+      "低ナトリウム血症が見られる",
+      "塩分の過剰摂取が原因"
+    ],
+    "answer": 1,
+    "explanation": "一次脱水は主として水が失われる状態であり、高ナトリウム血症とそれに伴う症状が見られます。"
+  },
+  {
+    "question": "高ナトリウム血症の改善に有効な治療法は次のうちどれですか？",
+    "options": [
+      "食塩の摂取",
+      "5%ブドウ糖液の投与",
+      "カリウム補充",
+      "発汗の促進"
+    ],
+    "answer": 1,
+    "explanation": "高ナトリウム血症の治療には、水分を補給することが必要であり、飲水できない場合には5%ブドウ糖液の投与が行われます。"
+  },
+  {
+    "question": "体液の浸透圧が高張の場合に見られる症状として正しいのは次のうちどれですか？",
+    "options": [
+      "浸透圧の低下",
+      "乏尿",
+      "下痢",
+      "血圧上昇"
+    ],
+    "answer": 1,
+    "explanation": "浸透圧が高張になると、バソプレシンの分泌による水の再吸収が促され、尿量が減少します。"
+  },
+  {
+    "question": "混合性脱水の治療法として適切なのは次のうちどれですか？",
+    "options": [
+      "飲水のみ",
+      "低ナトリウム食の摂取",
+      "細胞外液型輸液製剤の使用",
+      "食塩の補給"
+    ],
+    "answer": 2,
+    "explanation": "混合性脱水は塩分と水の両方が失われているため、細胞外液型輸液製剤を用いて適切に補給します。"
+  },
+  {
+    "question": "血漿中のカリウムイオン濃度が著しく上昇することによるリスクとして最も正しいのは次のうちどれですか？",
+    "options": [
+      "低血糖",
+      "不整脈",
+      "脱毛",
+      "高血圧"
+    ],
+    "answer": 1,
+    "explanation": "高カリウム血症では、心筋細胞の脱分極が起こりやすくなるため、不整脈が生じるリスクが高まります。"
+  },
+  {
+    "question": "高カリウム血症の原因として最も一般的なものは次のうちどれですか？",
+    "options": [
+      "腎不全",
+      "アルドステロン分泌過多",
+      "アルコールの摂取",
+      "低脂肪食の摂取"
+    ],
+    "answer": 0,
+    "explanation": "高カリウム血症の主な原因は腎不全で、尿の生成が阻害されるため体内にカリウムイオンが蓄積します。"
+  },
+  {
+    "question": "体液のpHが7.35未満になる状態は次のうちどれですか？",
+    "options": [
+      "代謝性アルカローシス",
+      "呼吸性アルカローシス",
+      "代謝性アシドーシス",
+      "高カリウム血症"
+    ],
+    "answer": 2,
+    "explanation": "血液のpHが7.35未満の場合はアシドーシスと呼ばれ、その原因によって代謝性または呼吸性に分類されます。"
+  },
+  {
+    "question": "呼吸性アルカローシスの症状が見られる状況として最も考えられるのは次のうちどれですか？",
+    "options": [
+      "肺炎",
+      "過換気症候群",
+      "インスリン不足",
+      "高脂肪食の摂取"
+    ],
+    "answer": 1,
+    "explanation": "過換気症候群では呼吸が促進されるため、CO₂が排出されすぎ、呼吸性アルカローシスが生じます。"
+  },
+  {
+    "question": "低カリウム血症の原因として正しいものは次のうちどれですか？",
+    "options": [
+      "代謝性アルカローシス",
+      "アルドステロン分泌不足",
+      "高血糖",
+      "低ナトリウム血症"
+    ],
+    "answer": 0,
+    "explanation": "代謝性アルカローシスではH⁺が減少し、血漿中のカリウムイオン濃度が低下するため、低カリウム血症が見られます。"
+  },
+  {
+    "question": "酸塩基平衡の調節に関与するホルモンは次のうちどれですか？",
+    "options": [
+      "インスリン",
+      "グルカゴン",
+      "バソプレシン",
+      "アルドステロン"
+    ],
+    "answer": 2,
+    "explanation": "バソプレシン（抗利尿ホルモン：ADH）は尿の生成を調整し、体液のpHバランスにも影響を与えます。"
+  },
+  {
+    "question": "体液のpHがアルカリ性に傾いた場合の腎性代償として正しいのは次のうちどれですか？",
+    "options": [
+      "H⁺の再吸収増加",
+      "HCO₃⁻の排泄促進",
+      "Na+の吸収阻害",
+      "K+の再吸収抑制"
+    ],
+    "answer": 1,
+    "explanation": "体液のpHがアルカリ性に傾くと、腎臓はHCO₃⁻の排泄を促進して酸塩基平衡を保とうとします。"
+  },
+  {
+    "question": "代謝性アシドーシスの際、代償機構として見られる症状は次のうちどれですか？",
+    "options": [
+      "過呼吸",
+      "低体温",
+      "発汗",
+      "浮腫"
+    ],
+    "answer": 0,
+    "explanation": "代謝性アシドーシスではH⁺の増加により呼吸が促進され、過呼吸が見られます（呼吸性代償）。"
+  }
+];
+
+    let currentQuestion = 0;
+    let score = 0;
+    let userAnswers = [];
+    let shuffledOptions = [];
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function loadQuestion() {
+      const quizContent = document.getElementById('quiz-content');
+      quizContent.classList.add('fade-out');
+
+      setTimeout(() => {
+        const question = quizData[currentQuestion];
+        document.getElementById('question').textContent = question.question;
+
+        shuffledOptions = shuffleArray([...question.options]);
+        const optionsHtml = shuffledOptions.map((option, index) => `
+          <div class="option" onclick="selectOption(${index})">${option}</div>
+        `).join('');
+
+        document.getElementById('options').innerHTML = optionsHtml;
+        document.getElementById('explanation').style.display = 'none';
+
+        quizContent.classList.remove('fade-out');
+        quizContent.classList.add('fade-in');
+
+        setTimeout(() => {
+          quizContent.classList.remove('fade-in');
+        }, 500);
+      }, 500);
+    }
+
+    function selectOption(index) {
+      const options = document.querySelectorAll('.option');
+      if (options[index].classList.contains('disabled')) {
+        return;
+      }
+
+      options.forEach(option => {
+        option.classList.add('disabled');
+      });
+
+      options[index].classList.add('selected');
+
+      const question = quizData[currentQuestion];
+      const selectedAnswerIndex = question.options.indexOf(shuffledOptions[index]);
+      userAnswers[currentQuestion] = selectedAnswerIndex;
+
+      const explanationEl = document.getElementById('explanation');
+      explanationEl.innerHTML = `
+        <div class="explanation-header">
+          <span class="explanation-icon">💡</span>
+          解説
+        </div>
+        ${question.explanation}
+      `;
+      explanationEl.style.display = 'block';
+
+      if (selectedAnswerIndex === question.answer) {
+        explanationEl.style.backgroundColor = '#e8f5e9';
+        explanationEl.style.borderLeftColor = '#4caf50';
+        options[index].classList.add('correct'); 
+      } else {
+        explanationEl.style.backgroundColor = '#ffebee';
+        explanationEl.style.borderLeftColor = '#f44336';
+      }
+    }
+
+    function nextQuestion() {
+      const selectedOption = document.querySelector('.option.selected');
+      if (selectedOption === null) {
+        alert('選択肢を選んでください');
+        return; 
+      }
+
+      if (currentQuestion < quizData.length - 1) {
+        currentQuestion++;
+        loadQuestion();
+      } else {
+        showResult();
+      }
+    }
+
+    function showResult() {
+      score = userAnswers.reduce((total, answer, index) => 
+        total + (answer === quizData[index].answer ? 1 : 0), 0);
+
+      const resultContainer = document.getElementById('result-container');
+      const quizContainer = document.getElementById('quiz-container');
+      quizContainer.style.display = 'none';
+
+      const percentage = (score / quizData.length) * 100;
+      let resultHtml = `
+        <h2>クイズ結果</h2>
+        <p>正解数: ${score} / ${quizData.length}</p>
+        <p>正答率: ${percentage.toFixed(2)}%</p>
+      `;
+
+      quizData.forEach((question, index) => {
+        const isCorrect = userAnswers[index] === question.answer;
+        resultHtml += `
+          <div class="result-card">
+            <h3>問題 ${index + 1}</h3>
+            <p class="result-status ${isCorrect ? 'correct' : 'incorrect'}">
+              ${isCorrect ? '正解' : '不正解'}
+            </p>
+            <p><strong>質問:</strong> ${question.question}</p>
+            <p><strong>あなたの回答:</strong> ${question.options[userAnswers[index]] || '未回答'}</p>
+            <p><strong>正解:</strong> ${question.options[question.answer]}</p>
+            <p><strong>説明:</strong> ${question.explanation}</p>
+          </div>
+        `;
+      });
+
+      resultHtml += `<button class="nav-button" onclick="restartQuiz()">もう一度挑戦する</button>`;
+      resultContainer.innerHTML = resultHtml;
+
+      if (percentage >= 80) {
+        const attendanceLink = document.getElementById('attendance-link');
+        attendanceLink.style.display = 'block';
+        attendanceLink.innerHTML = `
+          <p>おめでとうございます！80%以上の正答率です。</p>
+          <a href="https://forms.gle/syg66FRU2DhRsWJs9" target="_blank">出席確認フォームに回答する</a>
+        `;
+      }
+    }
+
+    function restartQuiz() {
+      currentQuestion = 0;
+      score = 0;
+      userAnswers = [];
+      shuffledOptions = [];
+      document.getElementById('quiz-container').style.display = 'block';
+      document.getElementById('result-container').innerHTML = '';
+      document.getElementById('attendance-link').style.display = 'none';
+      loadQuestion();
+    }
+
+    loadQuestion();
+  </script>
+</body>
+</html>
