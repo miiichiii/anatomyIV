@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> 脊髄神経と脳神経クイズ</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: linear-gradient(135deg, #a8edea, #fed6e3);
+      background-size: cover; 
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      padding: 20px;
+      margin: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1, h2 {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 700;
+
+}
+    .quiz-container, .result-card {
+  background-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .question {
+      font-size: 1.3em;
+      margin-bottom: 20px;
+      color: #1d1d1f;
+    }
+    .options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+    .option {
+      background-color: rgba(255, 255, 255, 0.7);
+  border: none;
+  border-radius: 16px;
+  padding: 15px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.3s ease 0.1s, transform 0.3s ease;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .option:hover {
+      background: linear-gradient(135deg, #a8edea, #fed6e3);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+    .option.selected {
+      background-color: #007aff;
+      color: #fff;
+    }
+    .option.disabled {
+      background: linear-gradient(135deg, #a8edea, #fed6e3);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+      }
+    /* 正解時のグラデーション */
+.option.correct {
+  background: linear-gradient(135deg, #34c759, #a8e6cf); /* 正解のグラデーション */
+  color: #fff;
+}
+
+/* 不正解時のグラデーション */
+.option.incorrect {
+  background: linear-gradient(135deg, #ff3b30, #ff9a8b); /* 不正解のグラデーション */
+  color: #fff;
+}
+
+    .option::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.1);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .option:active::after {
+      transform: scale(0.98);
+    }
+    .explanation {
+  margin-top: 20px;
+  font-size: 1em;
+  color: #333;
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-left: 5px solid #4caf50;
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  opacity: 1; /* 修正 */
+  transition: opacity 0.3s ease;
+}
+
+.explanation-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  font-weight: bold;
+  color: #4caf50;
+}
+
+.explanation-icon {
+  font-size: 1.5em;
+  margin-right: 10px;
+}
+    .nav-button {
+  background: linear-gradient(135deg, #007aff, #5ac8fa);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+  margin-top: 20px;
+  width: 100%;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.nav-button:hover {
+  background: linear-gradient(135deg, #005bb5, #4aa0d3);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.nav-button:active {
+  transform: scale(0.98);
+}
+    .result-card {
+      margin-bottom: 20px;
+    }
+    .result-card h3 {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+    }
+    .result-status {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .correct {
+      color: #34c759;
+    }
+    .incorrect {
+      color: #ff3b30;
+    }
+    #attendance-link {
+      background-color: #34c759;
+      color: white;
+      padding: 15px;
+      border-radius: 12px;
+      margin-top: 20px;
+      text-align: center;
+      display: none;
+    }
+    #attendance-link a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    #attendance-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 style="text-align: center;">脊髄神経と脳神経クイズ</h1>
+    <div id="quiz-container" class="quiz-container">
+      <div id="quiz-content">
+        <div id="question" class="question"></div>
+        <div id="options" class="options"></div>
+        <div id="explanation" class="explanation"></div>
+      </div>
+      <button id="next" class="nav-button" onclick="nextQuestion()">次の問題</button>
+    </div>
+    <div id="result-container"></div>
+    <div id="attendance-link"></div>
+  </div>
+  
+  
+  <script>
+    const quizData = [
+{
+  "question": "脊髄神経のうち、最も数が多い神経の区分はどれですか？",
+  "options": [
+    "頸神経",
+    "胸神経",
+    "腰神経",
+    "仙骨神経"
+  ],
+  "answer": 1,
+  "explanation": "脊髄神経は31対あり、胸神経は12対で、最も多く分布しています。頸神経は8対、腰神経は5対、仙骨神経も5対です。"
+},
+{
+  "question": "脊髄の前根に含まれる機能は次のうちどれですか？",
+  "options": [
+    "感覚性の軸索",
+    "運動性の軸索",
+    "自律神経の節後線維",
+    "感覚ニューロンの細胞体"
+  ],
+  "answer": 1,
+  "explanation": "前根は、運動ニューロンの軸索や自律神経のニューロンの軸索が通り、筋肉を動かす運動性の情報を伝達します。感覚性の情報は後根を通ります。"
+},
+{
+  "question": "神経叢を形成せずにそのまま標的に向かう神経はどれですか？",
+  "options": [
+    "腕神経叢",
+    "腰神経叢",
+    "仙骨神経叢",
+    "肋間神経"
+  ],
+  "answer": 3,
+  "explanation": "肋間神経は、胸神経から出た脊髄神経が神経叢をつくらず、そのまま標的に向かいます。その他の頸神経、腰神経、仙骨神経は神経叢を形成します。"
+},
+{
+  "question": "横隔神経が支配する部位は次のうちどれですか？",
+  "options": [
+    "横隔膜",
+    "胸壁",
+    "大腿部",
+    "殿部"
+  ],
+  "answer": 0,
+  "explanation": "横隔神経はC3〜C5から出ており、横隔膜の運動を支配しています。これにより呼吸を調整します。"
+},
+{
+  "question": "坐骨神経が分岐する部位は次のどれですか？",
+  "options": [
+    "膝窩",
+    "腰椎",
+    "仙骨",
+    "肩甲骨"
+  ],
+  "answer": 0,
+  "explanation": "坐骨神経は人体で最も大きな神経で、膝窩で脛骨神経と腓骨神経に分かれます。これにより下肢の運動と感覚を支配します。"
+},
+{
+  "question": "腕神経叢が支配する範囲として正しいのはどれですか？",
+  "options": [
+    "下肢",
+    "上肢",
+    "胸壁",
+    "横隔膜"
+  ],
+  "answer": 1,
+  "explanation": "腕神経叢はC5〜T1の脊髄神経の前枝からなり、上肢の筋肉や皮膚を支配しています。"
+},
+{
+  "question": "感覚ニューロンの細胞体が集まっている部位はどこですか？",
+  "options": [
+    "前根",
+    "後根",
+    "脊髄神経節",
+    "前角"
+  ],
+  "answer": 2,
+  "explanation": "感覚ニューロンの細胞体は脊髄神経節に集まっており、ここで感覚情報を処理しています。後根を通って脊髄に入ります。"
+},
+{
+  "question": "脊髄神経の支配する皮膚の領域を何と呼びますか？",
+  "options": [
+    "神経叢",
+    "皮膚分節（デルマトーム）",
+    "筋枝",
+    "自律神経節"
+  ],
+  "answer": 1,
+  "explanation": "皮膚分節（デルマトーム）は、特定の脊髄神経が支配する皮膚の帯状の領域を指します。全身の皮膚はこのように分節的に支配されています。"
+},
+{
+  "question": "大腿神経が支配する部位はどれですか？",
+  "options": [
+    "腕",
+    "下腹部",
+    "大腿前面",
+    "足背"
+  ],
+  "answer": 2,
+  "explanation": "大腿神経は腰神経叢から出て、主に大腿の前面の筋肉や皮膚を支配します。これにより大腿の伸展運動が可能になります。"
+},
+{
+  "question": "頸神経叢が支配する部位として正しいものはどれですか？",
+  "options": [
+    "下肢の皮膚",
+    "肋間の筋肉",
+    "頸部の筋肉と皮膚",
+    "手の筋肉"
+  ],
+  "answer": 2,
+  "explanation": "頸神経叢はC1〜C4の脊髄神経の前枝から成り、頸部の筋肉や皮膚に分布します。また、横隔膜も横隔神経を通じて支配しています。"
+},
+    {
+  "question": "嗅神経（Ⅰ）が支配する感覚はどれですか？",
+  "options": [
+    "視覚",
+    "聴覚",
+    "嗅覚",
+    "平衡感覚"
+  ],
+  "answer": 2,
+  "explanation": "嗅神経は、鼻腔上部の嗅覚受容器からの嗅覚情報を脳に伝える神経です。"
+},
+{
+  "question": "視神経（Ⅱ）が通る頭蓋の構造は次のうちどれですか？",
+  "options": [
+    "篩板",
+    "上眼窩裂",
+    "視神経管",
+    "頸静脈孔"
+  ],
+  "answer": 2,
+  "explanation": "視神経は、眼球の後極から出て視神経管を通り、脳に到達します。"
+},
+{
+  "question": "動眼神経（Ⅲ）が支配する筋は次のうちどれですか？",
+  "options": [
+    "上斜筋",
+    "外側直筋",
+    "下斜筋",
+    "舌筋"
+  ],
+  "answer": 2,
+  "explanation": "動眼神経は、眼球を動かす4つの筋肉（上直筋・内側直筋・下直筋・下斜筋）と上眼瞼挙筋を支配します。"
+},
+{
+  "question": "滑車神経（Ⅳ）が支配する筋は次のうちどれですか？",
+  "options": [
+    "上斜筋",
+    "外側直筋",
+    "上直筋",
+    "内側直筋"
+  ],
+  "answer": 0,
+  "explanation": "滑車神経は、眼球を動かす上斜筋を支配します。"
+},
+{
+  "question": "三叉神経（Ⅴ）は何種類の線維を含んでいますか？",
+  "options": [
+    "体性感覚性",
+    "運動性",
+    "副交感性",
+    "体性感覚性と運動性"
+  ],
+  "answer": 3,
+  "explanation": "三叉神経は、顔面の感覚と咀嚼筋の運動を司るため、体性感覚性と運動性の線維を含んでいます。"
+},
+{
+  "question": "外転神経（Ⅵ）が支配する筋はどれですか？",
+  "options": [
+    "内側直筋",
+    "上斜筋",
+    "外側直筋",
+    "下直筋"
+  ],
+  "answer": 2,
+  "explanation": "外転神経は、眼球を外側に動かす外側直筋を支配します。"
+},
+{
+  "question": "顔面神経（Ⅶ）が支配する機能として正しいのはどれですか？",
+  "options": [
+    "顔面の表情筋と味覚",
+    "視覚",
+    "眼球の運動",
+    "咀嚼筋"
+  ],
+  "answer": 0,
+  "explanation": "顔面神経は、顔面の表情筋、舌の前2/3の味覚、および唾液腺などを支配します。"
+},
+{
+  "question": "内耳神経（Ⅷ）が伝達する感覚は次のどれですか？",
+  "options": [
+    "嗅覚",
+    "視覚",
+    "平衡覚と聴覚",
+    "味覚"
+  ],
+  "answer": 2,
+  "explanation": "内耳神経は、平衡覚（前庭神経）と聴覚（蝸牛神経）の感覚を伝えます。"
+},
+{
+  "question": "舌咽神経（Ⅸ）が支配する器官として正しいものは次のどれですか？",
+  "options": [
+    "横隔膜",
+    "眼球の筋肉",
+    "耳下腺",
+    "舌の前2/3"
+  ],
+  "answer": 2,
+  "explanation": "舌咽神経は、耳下腺の分泌、舌の後1/3の味覚と感覚、咽頭の運動を支配します。"
+},
+{
+  "question": "迷走神経（Ⅹ）が支配する範囲として正しいのはどれですか？",
+  "options": [
+    "上肢の筋肉",
+    "大腿の筋肉",
+    "胸腹部の内臓",
+    "舌の筋肉"
+  ],
+  "answer": 2,
+  "explanation": "迷走神経は、胸部と腹部の内臓に広く分布し、副交感神経として働きます。"
+},
+{
+  "question": "副神経（Ⅺ）が支配する筋はどれですか？",
+  "options": [
+    "外側直筋",
+    "上眼瞼挙筋",
+    "胸鎖乳突筋と僧帽筋",
+    "咀嚼筋"
+  ],
+  "answer": 2,
+  "explanation": "副神経は、胸鎖乳突筋と僧帽筋を支配します。"
+},
+{
+  "question": "舌下神経（Ⅻ）が支配するのは次のうちどの筋ですか？",
+  "options": [
+    "咀嚼筋",
+    "表情筋",
+    "舌筋",
+    "眼球筋"
+  ],
+  "answer": 2,
+  "explanation": "舌下神経は、舌の運動を司る舌筋を支配します。"
+},
+{
+  "question": "顔面の感覚を司る脳神経はどれですか？",
+  "options": [
+    "動眼神経",
+    "滑車神経",
+    "三叉神経",
+    "顔面神経"
+  ],
+  "answer": 2,
+  "explanation": "三叉神経は、顔面の皮膚や粘膜の感覚を司ります。"
+},
+{
+  "question": "視神経の神経線維が交換される構造はどれですか？",
+  "options": [
+    "視交叉",
+    "視索",
+    "視神経管",
+    "視床"
+  ],
+  "answer": 0,
+  "explanation": "視交叉では左右の視神経が交差し、左右の視野からの情報を伝えます。"
+},
+{
+  "question": "動眼神経が支配する瞳孔の筋は次のどれですか？",
+  "options": [
+    "瞳孔散大筋",
+    "瞳孔括約筋",
+    "外側直筋",
+    "下斜筋"
+  ],
+  "answer": 1,
+  "explanation": "動眼神経の副交感神経線維は、瞳孔括約筋を支配し、瞳孔を縮小させます。"
+},
+{
+  "question": "蝸牛神経はどの感覚に関与していますか？",
+  "options": [
+    "平衡覚",
+    "視覚",
+    "聴覚",
+    "嗅覚"
+  ],
+  "answer": 2,
+  "explanation": "蝸牛神経は内耳の蝸牛から聴覚の情報を伝えます。"
+},
+{
+  "question": "舌咽神経が支配する舌の部分はどれですか？",
+  "options": [
+    "舌の前2/3",
+    "舌の後1/3",
+    "舌全体",
+    "舌根"
+  ],
+  "answer": 1,
+  "explanation": "舌咽神経は、舌の後1/3の感覚と味覚を支配します。"
+},
+{
+  "question": "顔面神経の副交感神経成分が支配するのはどの腺ですか？",
+  "options": [
+    "耳下腺",
+    "顎下腺と舌下腺",
+    "乳腺",
+    "汗腺"
+  ],
+  "answer": 1,
+  "explanation": "顔面神経は、顎下腺と舌下腺の分泌を調節します。"
+},
+{
+  "question": "顔面神経麻痺の主な症状は次のどれですか？",
+  "options": [
+    "味覚障害と咀嚼困難",
+    "視覚障害と嗅覚障害",
+    "顔面の表情筋麻痺と味覚障害",
+    "舌の運動障害"
+  ],
+  "answer": 2,
+  "explanation": "顔面神経麻痺では、表情筋の麻痺と舌の前2/3の味覚障害が現れます。"
+},
+{
+  "question": "動眼神経の損傷によって起こる症状はどれですか？",
+  "options": [
+    "瞳孔散大と眼瞼下垂",
+    "眼球運動の増強",
+    "視覚の完全喪失",
+    "聴覚の低下"
+  ],
+  "answer": 0,
+  "explanation": "動眼神経が損傷すると、瞳孔括約筋が働かなくなり瞳孔が散大し、上眼瞼挙筋の麻痺で眼瞼下垂が起こります。"
+}
+]
+;
+
+      let currentQuestion = 0;
+    let score = 0;
+    let userAnswers = [];
+    let shuffledOptions = [];
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function loadQuestion() {
+      const question = quizData[currentQuestion];
+      document.getElementById('question').textContent = question.question;
+
+      shuffledOptions = shuffleArray([...question.options]);
+      const optionsHtml = shuffledOptions.map((option, index) => `
+        <div class="option" onclick="selectOption(${index})">${option}</div>
+      `).join('');
+
+      document.getElementById('options').innerHTML = optionsHtml;
+
+      // 解説のリセット
+      const explanationEl = document.getElementById('explanation');
+      explanationEl.style.opacity = '0';
+      explanationEl.style.display = 'none';
+    }
+
+    function selectOption(index) {
+  const options = document.querySelectorAll('.option');
+  if (options[index].classList.contains('disabled')) {
+    return;
+  }
+
+  // すべての選択肢を無効化
+  options.forEach(option => {
+    option.classList.add('disabled');
+  });
+
+  // 選択肢を選んだときに`selected`クラスを追加
+  options[index].classList.add('selected');
+
+  // 現在の問題を取得
+  const question = quizData[currentQuestion];
+  const selectedAnswerIndex = question.options.indexOf(shuffledOptions[index]);
+  userAnswers[currentQuestion] = selectedAnswerIndex;
+
+  // 解説の表示内容を設定
+  const explanationEl = document.getElementById('explanation');
+  explanationEl.innerHTML = `
+    <div class="explanation-header">
+      <span class="explanation-icon">💡</span>
+      解説
+    </div>
+    ${question.explanation}
+  `;
+  
+  // 一旦解説を見えないようにしてから表示の遅延を設定
+  explanationEl.style.opacity = '0';
+  explanationEl.style.display = 'block'; // まず表示を「block」にする
+
+  // 遅延を設定して解説をフェードイン
+  setTimeout(() => {
+    explanationEl.style.opacity = '1'; // 遅れてopacityを1にする
+  }, 200); // 200msの遅延を設定
+
+  // 正解・不正解のクラスを付与してグラデーションを適用
+  if (selectedAnswerIndex === question.answer) {
+    explanationEl.style.backgroundColor = '#e8f5e9';
+    explanationEl.style.borderLeftColor = '#4caf50';
+    options[index].classList.add('correct'); // 正解時に`correct`クラスを追加
+  } else {
+    explanationEl.style.backgroundColor = '#ffebee';
+    explanationEl.style.borderLeftColor = '#f44336';
+    options[index].classList.add('incorrect'); // 不正解時に`incorrect`クラスを追加
+  }
+}
+
+function loadQuestion() {
+  const question = quizData[currentQuestion];
+  document.getElementById('question').textContent = question.question;
+
+  shuffledOptions = shuffleArray([...question.options]);
+  const optionsHtml = shuffledOptions.map((option, index) => `
+    <div class="option" onclick="selectOption(${index})">${option}</div>
+  `).join('');
+
+  document.getElementById('options').innerHTML = optionsHtml;
+
+  // 解説のリセット
+  const explanationEl = document.getElementById('explanation');
+  explanationEl.style.display = 'none'; // 解説を非表示に
+  explanationEl.style.opacity = '0'; // 解説のopacityをリセット
+}
+
+function loadQuestion() {
+  const question = quizData[currentQuestion];
+  document.getElementById('question').textContent = question.question;
+
+  shuffledOptions = shuffleArray([...question.options]);
+  const optionsHtml = shuffledOptions.map((option, index) => `
+    <div class="option" onclick="selectOption(${index})">${option}</div>
+  `).join('');
+
+  document.getElementById('options').innerHTML = optionsHtml;
+
+  // 解説のリセット
+  const explanationEl = document.getElementById('explanation');
+  explanationEl.style.display = 'none'; // 解説を非表示に
+}
+    function nextQuestion() {
+      const selectedOption = document.querySelector('.option.selected');
+      if (selectedOption === null) {
+        alert('選択肢を選んでください');
+        return; 
+      }
+
+      if (currentQuestion < quizData.length - 1) {
+        currentQuestion++;
+        loadQuestion();
+      } else {
+        showResult();
+      }
+    }
+
+    function showResult() {
+      score = userAnswers.reduce((total, answer, index) => 
+        total + (answer === quizData[index].answer ? 1 : 0), 0);
+
+      const resultContainer = document.getElementById('result-container');
+      const quizContainer = document.getElementById('quiz-container');
+      quizContainer.style.display = 'none';
+
+      const percentage = (score / quizData.length) * 100;
+      let resultHtml = `
+        <h2>クイズ結果</h2>
+        <p>正解数: ${score} / ${quizData.length}</p>
+        <p>正答率: ${percentage.toFixed(2)}%</p>
+      `;
+
+      quizData.forEach((question, index) => {
+        const isCorrect = userAnswers[index] === question.answer;
+        resultHtml += `
+          <div class="result-card">
+            <h3>問題 ${index + 1}</h3>
+            <p class="result-status ${isCorrect ? 'correct' : 'incorrect'}">
+              ${isCorrect ? '正解' : '不正解'}
+            </p>
+            <p><strong>質問:</strong> ${question.question}</p>
+            <p><strong>あなたの回答:</strong> ${question.options[userAnswers[index]] || '未回答'}</p>
+            <p><strong>正解:</strong> ${question.options[question.answer]}</p>
+            <p><strong>説明:</strong> ${question.explanation}</p>
+          </div>
+        `;
+      });
+
+      resultHtml += `<button class="nav-button" onclick="restartQuiz()">もう一度挑戦する</button>`;
+      resultContainer.innerHTML = resultHtml;
+
+      if (percentage >= 80) {
+        const attendanceLink = document.getElementById('attendance-link');
+        attendanceLink.style.display = 'block';
+        attendanceLink.innerHTML = `
+          <p>おめでとうございます！80%以上の正答率です。</p>
+          <a href="https://forms.gle/Yakxq94qMbGc28L47" target="_blank">出席確認フォームに回答する</a>
+        `;
+      }
+    }
+
+    function restartQuiz() {
+      currentQuestion = 0;
+      score = 0;
+      userAnswers = [];
+      shuffledOptions = [];
+      document.getElementById('quiz-container').style.display = 'block';
+      document.getElementById('result-container').innerHTML = '';
+      document.getElementById('attendance-link').style.display = 'none';
+      loadQuestion();
+    }
+
+    loadQuestion();
+  </script>
+</body>
+</html>
