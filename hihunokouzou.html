@@ -1,1 +1,517 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>  皮膚の構造クイズ</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: linear-gradient(135deg, #a8edea, #fed6e3);
+      background-size: cover; 
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      padding: 20px;
+      margin: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1, h2 {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 700;
+
+}
+    .quiz-container, .result-card {
+  background-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .question {
+      font-size: 1.3em;
+      margin-bottom: 20px;
+      color: #1d1d1f;
+    }
+    .options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+    .option {
+      background-color: rgba(255, 255, 255, 0.7);
+  border: none;
+  border-radius: 16px;
+  padding: 15px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.3s ease 0.1s, transform 0.3s ease;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .option:hover {
+      background: linear-gradient(135deg, #a8edea, #fed6e3);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+    .option.selected {
+      background-color: #007aff;
+      color: #fff;
+    }
+    .option.disabled {
+      background: linear-gradient(135deg, #a8edea, #fed6e3);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+      }
+    /* 正解時のグラデーション */
+.option.correct {
+  background: linear-gradient(135deg, #34c759, #a8e6cf); /* 正解のグラデーション */
+  color: #fff;
+}
+
+/* 不正解時のグラデーション */
+.option.incorrect {
+  background: linear-gradient(135deg, #ff3b30, #ff9a8b); /* 不正解のグラデーション */
+  color: #fff;
+}
+
+    .option::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.1);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .option:active::after {
+      transform: scale(0.98);
+    }
+    .explanation {
+  margin-top: 20px;
+  font-size: 1em;
+  color: #333;
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-left: 5px solid #4caf50;
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  opacity: 1; /* 修正 */
+  transition: opacity 0.3s ease;
+}
+
+.explanation-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  font-weight: bold;
+  color: #4caf50;
+}
+
+.explanation-icon {
+  font-size: 1.5em;
+  margin-right: 10px;
+}
+    .nav-button {
+  background: linear-gradient(135deg, #007aff, #5ac8fa);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+  margin-top: 20px;
+  width: 100%;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.nav-button:hover {
+  background: linear-gradient(135deg, #005bb5, #4aa0d3);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.nav-button:active {
+  transform: scale(0.98);
+}
+    .result-card {
+      margin-bottom: 20px;
+    }
+    .result-card h3 {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+    }
+    .result-status {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .correct {
+      color: #34c759;
+    }
+    .incorrect {
+      color: #ff3b30;
+    }
+    #attendance-link {
+      background-color: #34c759;
+      color: white;
+      padding: 15px;
+      border-radius: 12px;
+      margin-top: 20px;
+      text-align: center;
+      display: none;
+    }
+    #attendance-link a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    #attendance-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 style="text-align: center;">皮膚の構造クイズ</h1>
+    <div id="quiz-container" class="quiz-container">
+      <div id="quiz-content">
+        <div id="question" class="question"></div>
+        <div id="options" class="options"></div>
+        <div id="explanation" class="explanation"></div>
+      </div>
+      <button id="next" class="nav-button" onclick="nextQuestion()">次の問題</button>
+    </div>
+    <div id="result-container"></div>
+    <div id="attendance-link"></div>
+  </div>
+  
+  <script>
+    const quizData = [
+  {
+    "question": "耳の構造のうち、音波を振動に変換する役割を持つのはどれか。",
+    "options": ["耳介", "鼓膜", "耳小骨", "蝸牛"],
+    "answer": 1,
+    "explanation": "鼓膜は外耳と中耳を隔てる薄い膜で、音波を受けて振動することで、音の情報を中耳に伝えます。"
+  },
+  {
+    "question": "中耳にある耳小骨を構成する骨はどれか。",
+    "options": ["砧骨、鐙骨、槌骨", "槌骨、砧骨、鐙骨", "鐙骨、槌骨、砧骨", "槌骨、鐙骨、砧骨"],
+    "answer": 1,
+    "explanation": "中耳には、鼓膜の振動を増幅して内耳に伝える３つの小さな骨、槌骨、砧骨、鐙骨があります。"
+  },
+  {
+    "question": "内耳で、回転運動の加速度を感知する器官はどれか。",
+    "options": ["蝸牛", "前庭", "半規管", "鼓室"],
+    "answer": 2,
+    "explanation": "半規管は、内部にリンパ液を満たした３つのループ状の管からなり、回転運動によるリンパ液の動きを感知することで、体のバランスを保つのに役立っています。"
+  },
+  {
+    "question": "音の高低は、何と表現されるか？",
+    "options": ["dB（デシベル）", "Hz（ヘルツ）", "W（ワット）", "Pa（パスカル）"],
+    "answer": 1,
+    "explanation": "音の高さは周波数で表され、単位はHz（ヘルツ）です。1秒間に何回振動するかを表しています。"
+  },
+  {
+    "question": "ヒトの可聴音の周波数範囲はどれか。",
+    "options": ["2～200 Hz", "20～20,000 Hz", "200～200,000 Hz", "2,000～2,000,000 Hz"],
+    "answer": 1,
+    "explanation": "ヒトが聞き取れる音の周波数範囲はおよそ20～20,000 Hzです。これより高い周波数の音は超音波と呼ばれます。"
+  },
+  {
+    "question": "中耳炎などで、音が内耳まで伝わりにくくなる難聴を何というか。",
+    "options": ["感音難聴", "伝音難聴", "老人性難聴", "騒音性難聴"],
+    "answer": 1,
+    "explanation": "伝音難聴は、外耳や中耳の障害によって、音が内耳にうまく伝わらないために起こる難聴です。中耳炎などが原因となることがあります。"
+  },
+  {
+    "question": "味蕾はどこに存在するか？",
+    "options": ["舌の表面", "歯茎", "口蓋", "咽頭"],
+    "answer": 0,
+    "explanation": "味蕾は、舌の表面にある乳頭と呼ばれる小さな突起の中に存在します。"
+  },
+  {
+    "question": "基本的な味覚に含まれないのはどれか？",
+    "options": ["甘味", "うま味", "辛味", "苦味"],
+    "answer": 2,
+    "explanation": "基本的な味覚は、甘味、酸味、塩味、苦味、うま味の５種類です。辛味は痛覚刺激によるものです。"
+  },
+  {
+    "question": "嗅細胞はどこに存在するか？",
+    "options": ["鼻腔の最上部", "鼻腔の最下部", "副鼻腔", "咽頭"],
+    "answer": 0,
+    "explanation": "嗅細胞は鼻腔の最上部にある嗅粘膜に存在し、匂い物質を感知します。"
+  },
+  {
+    "question": "痛覚は、どの神経終末が刺激されることで起こるか。",
+    "options": ["運動神経終末", "自由神経終末", "ルフィニ終末", "パチニ小体"],
+    "answer": 1,
+    "explanation": "自由神経終末は、皮膚や粘膜、骨膜、内臓などに広く分布し、痛み刺激を感知する受容器として機能します。"
+  },
+  {
+    "question": "体性痛と内臓痛のうち、局在がはっきりしているのはどちらか？",
+    "options": ["体性痛", "内臓痛"],
+    "answer": 0,
+    "explanation": "体性痛は、皮膚や筋肉、骨など体表の痛みで、痛みの発生場所が比較的はっきりしています。一方、内臓痛は、痛みの発生場所が漠然としていることが多く、関連痛として体表に痛みを感じることもあります。"
+  },
+  {
+    "question": "内臓の痛みを体表の痛みとして感じる現象を何というか。",
+    "options": ["投射痛", "関連痛", "幻肢痛", "神経障害性疼痛"],
+    "answer": 1,
+    "explanation": "内臓からの痛みの信号が、脊髄で皮膚からの痛みの信号と同じ経路を通るため、内臓の痛みを皮膚の痛みとして感じる錯覚が生じます。これを関連痛といいます。"
+  },
+  {
+    "question": "強力な鎮痛作用を持つオピオイド鎮痛薬はどれか。",
+    "options": ["アスピリン", "インドメタシン", "モルヒネ", "アセトアミノフェン"],
+    "answer": 2,
+    "explanation": "モルヒネは、オピオイド受容体に作用する強力な鎮痛薬で、激しい痛みを緩和するために使用されます。"
+  },
+  {
+    "question": "耳垢は、何から分泌される物質と、何からできているか。",
+    "options": ["アポクリン腺、上皮細胞", "エクリン腺、ケラチン", "皮脂腺、メラニン", "耳下腺、コラーゲン"],
+    "answer": 0,
+    "explanation": "耳垢は、外耳道にあるアポクリン腺（耳道腺）から分泌される物質と、剥がれ落ちた上皮細胞が混ざってできています。"
+  },
+  {
+    "question": "蝸牛内にある聴覚受容器は何か。",
+    "options": ["クプラ", "耳石", "コルチ器", "膨大部稜"],
+    "answer": 2,
+    "explanation": "コルチ器は蝸牛管の基底膜上にあり、有毛細胞が音の振動を電気信号に変換する役割を担っています。"
+  },
+  {
+    "question": "鼓室と咽頭を繋ぎ、鼓室内圧の調整をしている器官はどれか。",
+    "options": ["耳管", "外耳道", "半規管", "蝸牛管"],
+    "answer": 0,
+    "explanation": "耳管（ユースタキオ管）は、鼓室と咽頭を繋ぐ管で、鼓室内の気圧を調整する役割を担っています。耳管が開閉することで、鼓膜が正常に振動できるようになっています。"
+  },
+  {
+    "question": "舌の味覚を支配する神経はどれか。",
+    "options": ["三叉神経、顔面神経、舌咽神経", "三叉神経、迷走神経、副神経", "顔面神経、舌咽神経、迷走神経", "舌咽神経、迷走神経、副神経"],
+    "answer": 0,
+    "explanation": "舌前2/3の味覚は顔面神経、舌後1/3の味覚は舌咽神経が支配しています。また、舌前2/3の触覚は三叉神経が支配しています。"
+  },
+  {
+    "question": "嗅覚の情報を脳に伝える神経はどれか。",
+    "options": ["嗅神経", "視神経", "動眼神経", "滑車神経"],
+    "answer": 0,
+    "explanation": "嗅神経は、嗅細胞の軸索が集まって形成され、嗅覚情報を嗅球から脳に伝達します。"
+  },
+  {
+    "question": "痛みを増強する物質として、誤っているものはどれか。",
+    "options": ["ブラジキニン", "プロスタグランジン", "エンケファリン", "サブスタンスP"],
+    "answer": 2,
+    "explanation": "エンケファリンは、鎮痛作用のある内因性オピオイドです。ブラジキニン、プロスタグランジン、サブスタンスPは発痛物質です。"
+  },
+{
+    "question": "組織損傷時に産生され、発痛作用を持つ物質はどれか",
+    "options": ["ブラジキニン", "ヒスタミン", "セロトニン", "アセチルコリン"],
+    "answer": 0,
+    "explanation": "ブラジキニンは、組織損傷時に産生される生理活性物質で、発痛作用や炎症反応を引き起こします。"
+  },
+{
+    "question": "平衡覚を司る器官はどれか",
+    "options": ["蝸牛", "前庭と半規管", "コルチ器", "鼓膜"],
+    "answer": 1,
+    "explanation": "前庭は直線加速度や傾きを、半規管は回転加速度を感知し、平衡覚を保つのに重要な役割を果たしています。"
+  }
+
+]
+;
+
+      let currentQuestion = 0;
+    let score = 0;
+    let userAnswers = [];
+    let shuffledOptions = [];
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function loadQuestion() {
+      const question = quizData[currentQuestion];
+      document.getElementById('question').textContent = question.question;
+
+      shuffledOptions = shuffleArray([...question.options]);
+      const optionsHtml = shuffledOptions.map((option, index) => `
+        <div class="option" onclick="selectOption(${index})">${option}</div>
+      `).join('');
+
+      document.getElementById('options').innerHTML = optionsHtml;
+
+      // 解説のリセット
+      const explanationEl = document.getElementById('explanation');
+      explanationEl.style.opacity = '0';
+      explanationEl.style.display = 'none';
+    }
+
+    function selectOption(index) {
+  const options = document.querySelectorAll('.option');
+  if (options[index].classList.contains('disabled')) {
+    return;
+  }
+
+  // すべての選択肢を無効化
+  options.forEach(option => {
+    option.classList.add('disabled');
+  });
+
+  // 選択肢を選んだときに`selected`クラスを追加
+  options[index].classList.add('selected');
+
+  // 現在の問題を取得
+  const question = quizData[currentQuestion];
+  const selectedAnswerIndex = question.options.indexOf(shuffledOptions[index]);
+  userAnswers[currentQuestion] = selectedAnswerIndex;
+
+  // 解説の表示内容を設定
+  const explanationEl = document.getElementById('explanation');
+  explanationEl.innerHTML = `
+    <div class="explanation-header">
+      <span class="explanation-icon">💡</span>
+      解説
+    </div>
+    ${question.explanation}
+  `;
+  
+  // 一旦解説を見えないようにしてから表示の遅延を設定
+  explanationEl.style.opacity = '0';
+  explanationEl.style.display = 'block'; // まず表示を「block」にする
+
+  // 遅延を設定して解説をフェードイン
+  setTimeout(() => {
+    explanationEl.style.opacity = '1'; // 遅れてopacityを1にする
+  }, 200); // 200msの遅延を設定
+
+  // 正解・不正解のクラスを付与してグラデーションを適用
+  if (selectedAnswerIndex === question.answer) {
+    explanationEl.style.backgroundColor = '#e8f5e9';
+    explanationEl.style.borderLeftColor = '#4caf50';
+    options[index].classList.add('correct'); // 正解時に`correct`クラスを追加
+  } else {
+    explanationEl.style.backgroundColor = '#ffebee';
+    explanationEl.style.borderLeftColor = '#f44336';
+    options[index].classList.add('incorrect'); // 不正解時に`incorrect`クラスを追加
+  }
+}
+
+function loadQuestion() {
+  const question = quizData[currentQuestion];
+  document.getElementById('question').textContent = question.question;
+
+  shuffledOptions = shuffleArray([...question.options]);
+  const optionsHtml = shuffledOptions.map((option, index) => `
+    <div class="option" onclick="selectOption(${index})">${option}</div>
+  `).join('');
+
+  document.getElementById('options').innerHTML = optionsHtml;
+
+  // 解説のリセット
+  const explanationEl = document.getElementById('explanation');
+  explanationEl.style.display = 'none'; // 解説を非表示に
+  explanationEl.style.opacity = '0'; // 解説のopacityをリセット
+}
+
+function loadQuestion() {
+  const question = quizData[currentQuestion];
+  document.getElementById('question').textContent = question.question;
+
+  shuffledOptions = shuffleArray([...question.options]);
+  const optionsHtml = shuffledOptions.map((option, index) => `
+    <div class="option" onclick="selectOption(${index})">${option}</div>
+  `).join('');
+
+  document.getElementById('options').innerHTML = optionsHtml;
+
+  // 解説のリセット
+  const explanationEl = document.getElementById('explanation');
+  explanationEl.style.display = 'none'; // 解説を非表示に
+}
+    function nextQuestion() {
+      const selectedOption = document.querySelector('.option.selected');
+      if (selectedOption === null) {
+        alert('選択肢を選んでください');
+        return; 
+      }
+
+      if (currentQuestion < quizData.length - 1) {
+        currentQuestion++;
+        loadQuestion();
+      } else {
+        showResult();
+      }
+    }
+
+    function showResult() {
+      score = userAnswers.reduce((total, answer, index) => 
+        total + (answer === quizData[index].answer ? 1 : 0), 0);
+
+      const resultContainer = document.getElementById('result-container');
+      const quizContainer = document.getElementById('quiz-container');
+      quizContainer.style.display = 'none';
+
+      const percentage = (score / quizData.length) * 100;
+      let resultHtml = `
+        <h2>クイズ結果</h2>
+        <p>正解数: ${score} / ${quizData.length}</p>
+        <p>正答率: ${percentage.toFixed(2)}%</p>
+      `;
+
+      quizData.forEach((question, index) => {
+        const isCorrect = userAnswers[index] === question.answer;
+        resultHtml += `
+          <div class="result-card">
+            <h3>問題 ${index + 1}</h3>
+            <p class="result-status ${isCorrect ? 'correct' : 'incorrect'}">
+              ${isCorrect ? '正解' : '不正解'}
+            </p>
+            <p><strong>質問:</strong> ${question.question}</p>
+            <p><strong>あなたの回答:</strong> ${question.options[userAnswers[index]] || '未回答'}</p>
+            <p><strong>正解:</strong> ${question.options[question.answer]}</p>
+            <p><strong>説明:</strong> ${question.explanation}</p>
+          </div>
+        `;
+      });
+
+      resultHtml += `<button class="nav-button" onclick="restartQuiz()">もう一度挑戦する</button>`;
+      resultContainer.innerHTML = resultHtml;
+
+      if (percentage >= 80) {
+        const attendanceLink = document.getElementById('attendance-link');
+        attendanceLink.style.display = 'block';
+        attendanceLink.innerHTML = `
+          <p>おめでとうございます！80%以上の正答率です。</p>
+          <a href="https://forms.gle/EGgWAfv2SSSkokvx7" target="_blank">出席確認フォームに回答する</a>
+        `;
+      }
+    }
+
+    function restartQuiz() {
+      currentQuestion = 0;
+      score = 0;
+      userAnswers = [];
+      shuffledOptions = [];
+      document.getElementById('quiz-container').style.display = 'block';
+      document.getElementById('result-container').innerHTML = '';
+      document.getElementById('attendance-link').style.display = 'none';
+      loadQuestion();
+    }
+
+    loadQuestion();
+  </script>
+</body>
+</html>
